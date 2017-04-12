@@ -72,11 +72,11 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
             model.put("BaseFileName", getBaseFileName(nodeRef));
             //We need to enable this if we want to be able to insert image into the documents
             model.put("DisableCopy", false);
-            model.put("DisablePrint", true);
-            model.put("DisableExport", true);
-            model.put("HideExportOption", true);
+            model.put("DisablePrint", false);
+            model.put("DisableExport", false);
+            model.put("HideExportOption", false);
             model.put("HideSaveOption", false);
-            model.put("HidePrintOption", true);
+            model.put("HidePrintOption", false);
             model.put("LastModifiedTime", dte);
             model.put("OwnerId", nodeService.getProperty(nodeRef, ContentModel.PROP_CREATOR).toString());
             model.put("Size", getSize(nodeRef));
