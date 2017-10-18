@@ -69,7 +69,9 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
             String dte = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC)
                          .format(Instant.ofEpochMilli(lastModifiedDate.getTime()));
             //TODO Some properties are hard coded for now but we should look into making them sysadmin configurable
-            model.put("BaseFileName", getBaseFileName(nodeRef));
+
+            // BaseFileName need extension, else Lool load it in read-only mode (since 2.1.4)
+            model.put("BaseFileName", (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
             //We need to enable this if we want to be able to insert image into the documents
             model.put("DisableCopy", false);
             model.put("DisablePrint", false);
@@ -93,20 +95,6 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
             throw new WebScriptException(Status.STATUS_BAD_REQUEST, "error returning file nodeRef\nReason:\n" + ge.getMessage());
         }
         return model;
-    }
-
-    /**
-     * Returns the actual file of the file itself (the cm:name property)
-     * @param nodeRef
-     * @return
-     */
-    public String getBaseFileName(NodeRef nodeRef) {
-        String name = (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME);
-        if (name != null) {
-            return FilenameUtils.getBaseName(name);
-        } else {
-            return "";
-        }
     }
 
     /**
