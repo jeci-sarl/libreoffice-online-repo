@@ -42,6 +42,7 @@
 		<property name="nodeService" ref="nodeService"/>
 		<property name="retryingTransactionHelper" ref="retryingTransactionHelper" />
 		<property name="wopiTokenService" ref="LOOLWPOITokenService" />
+		<property name="versionService" ref="versionService" />
 	</bean>
 
 	<bean id="webscript.dk.magenta.wopi.lool-host.get" class="dk.magenta.libreoffice.online.LOOLServiceUrlInfoWebScript"

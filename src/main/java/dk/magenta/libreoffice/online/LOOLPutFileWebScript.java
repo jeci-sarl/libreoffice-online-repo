@@ -16,25 +16,41 @@ limitations under the License.
 */
 package dk.magenta.libreoffice.online;
 
-import dk.magenta.libreoffice.online.service.PersonInfo;
-import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
-import dk.magenta.libreoffice.online.service.WOPITokenService;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
-import org.alfresco.service.cmr.repository.*;
+import org.alfresco.repo.version.VersionModel;
+import org.alfresco.service.cmr.repository.ContentIOException;
+import org.alfresco.service.cmr.repository.ContentService;
+import org.alfresco.service.cmr.repository.ContentWriter;
+import org.alfresco.service.cmr.repository.NodeRef;
+import org.alfresco.service.cmr.repository.NodeService;
+import org.alfresco.service.cmr.version.VersionService;
+import org.alfresco.service.cmr.version.VersionType;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.extensions.webscripts.*;
+import org.springframework.extensions.webscripts.AbstractWebScript;
+import org.springframework.extensions.webscripts.Status;
+import org.springframework.extensions.webscripts.WebScriptException;
+import org.springframework.extensions.webscripts.WebScriptRequest;
+import org.springframework.extensions.webscripts.WebScriptResponse;
 
-import java.io.IOException;
+import dk.magenta.libreoffice.online.service.PersonInfo;
+import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
+import dk.magenta.libreoffice.online.service.WOPITokenService;
 
 public class LOOLPutFileWebScript extends AbstractWebScript {
     private static final Log logger = LogFactory.getLog(LOOLPutFileWebScript.class);
     private WOPITokenService wopiTokenService;
     private NodeService nodeService;
     private ContentService contentService;
+    private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
 
     @Override
@@ -47,6 +63,13 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
         if (wopiOverrideHeader == null || !wopiOverrideHeader.equals("PUT")) {
             throw new WebScriptException("X-WOPI-Override header must be present and equal to 'PUT'");
         }
+
+        /*
+         * will have the value 'true' when the PutFile is triggered by autosave, and
+         * 'false' when triggered by explicit user operation (Save button or menu
+         * entry).
+         */
+        boolean isAutosave = Boolean.getBoolean(req.getHeader("X-LOOL-WOPI-IsAutosave"));
 
         try {
             WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
@@ -68,9 +91,15 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
                             writer.putContent(req.getContent().getInputStream());
                             writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
                             writer.guessEncoding();
+                            
 
                             logger.info("\n****** Debug testing ********\n\t\tToken: " + tokenInfo.getAccessToken()
                                     + "\n\t\tFileId: " + tokenInfo.getFileId() + "\n\t\tUserName: " + tokenInfo.getUserName() + "\n");
+                            Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
+                            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                            versionProperties.put(VersionModel.PROP_DESCRIPTION, isAutosave?"LOOL autosave":"LOOL manual save");
+                            versionService.createVersion(nodeRef, versionProperties);
+                            
                         } finally {
                             AuthenticationUtil.clearCurrentSecurityContext();
                         }
@@ -106,6 +135,10 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
         this.contentService = contentService;
     }
 
+    public void setVersionService(VersionService versionService) {
+        this.versionService = versionService;
+    }
+    
     public void setRetryingTransactionHelper(RetryingTransactionHelper retryingTransactionHelper) {
         this.retryingTransactionHelper = retryingTransactionHelper;
     }
