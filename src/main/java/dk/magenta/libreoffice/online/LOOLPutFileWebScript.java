@@ -64,13 +64,11 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
             throw new WebScriptException("X-WOPI-Override header must be present and equal to 'PUT'");
         }
 
-        /*
-         * will have the value 'true' when the PutFile is triggered by autosave, and
-         * 'false' when triggered by explicit user operation (Save button or menu
-         * entry).
-         */
-        boolean isAutosave = Boolean.getBoolean(req.getHeader("X-LOOL-WOPI-IsAutosave"));
-
+		/*
+		 * will have the value 'true' when the PutFile is triggered by autosave, and
+		 * 'false' when triggered by explicit user operation (Save button or menu
+		 * entry).
+		 */
 		if (logger.isDebugEnabled()) {
 			for (String hdr : req.getHeaderNames()) {
 				for (String val : req.getHeaderValues(hdr)) {
@@ -78,6 +76,14 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
 				}
 			}
 		}
+		String hdrAutosave = req.getHeader("X-LOOL-WOPI-IsAutosave");
+		boolean isAutosave = hdrAutosave != null && Boolean.parseBoolean(hdrAutosave.trim());
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Request " + (isAutosave ? "is" : "is not") + " AUTOSAVE");
+		}
+		
+        
         try {
             WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
             //Verifying that the user actually exists
