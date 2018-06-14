@@ -71,6 +71,13 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
          */
         boolean isAutosave = Boolean.getBoolean(req.getHeader("X-LOOL-WOPI-IsAutosave"));
 
+		if (logger.isDebugEnabled()) {
+			for (String hdr : req.getHeaderNames()) {
+				for (String val : req.getHeaderValues(hdr)) {
+					logger.debug("HDR " + hdr + ":" + val);
+				}
+			}
+		}
         try {
             WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
             //Verifying that the user actually exists
@@ -92,9 +99,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
                             writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
                             writer.guessEncoding();
                             
-
-                            logger.info("\n****** Debug testing ********\n\t\tToken: " + tokenInfo.getAccessToken()
-                                    + "\n\t\tFileId: " + tokenInfo.getFileId() + "\n\t\tUserName: " + tokenInfo.getUserName() + "\n");
+                            
                             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
                             versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
                             versionProperties.put(VersionModel.PROP_DESCRIPTION, isAutosave?"LOOL autosave":"LOOL manual save");
