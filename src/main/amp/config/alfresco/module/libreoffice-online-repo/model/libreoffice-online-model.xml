@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<model xmlns="http://www.alfresco.org/model/dictionary/1.0" name="loo:LibreOfficeOnline">
+<model xmlns="http://www.alfresco.org/model/dictionary/1.0" name="lool:LibreOfficeOnline">
     <description>LibreOffice Online Model</description>
     <author>Jérémie Lesage</author>
     <version>1.0</version>
@@ -9,7 +9,7 @@
     </imports>
     
     <namespaces>
-        <namespace uri="http://www.libreoffice.org/model/online/1.0" prefix="loo" />
+        <namespace uri="http://www.libreoffice.org/model/online/1.0" prefix="lool" />
     </namespaces>
     
     <data-types />
@@ -19,11 +19,11 @@
     <types />
     
     <aspects>
-        <aspect name="loo:CollaboraOnline">
+        <aspect name="lool:collaboraOnline">
             <title>Collabora Online</title>
             <description>Edit with Collabora Online</description>
             <properties>
-                <property name="loo:started_at">
+                <property name="lool:started_at">
                     <title>Started at</title>
                     <description>Edition started t</description>
                     <type>d:datetime</type>
@@ -32,7 +32,7 @@
                         <tokenised>TRUE</tokenised>
                     </index>
                 </property>
-                <property name="loo:editors">
+                <property name="lool:editors">
                     <title>Editors</title>
                     <description>List of current editors</description>
                     <type>d:text</type>
