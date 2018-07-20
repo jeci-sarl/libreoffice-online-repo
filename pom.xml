@@ -85,6 +85,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>de.jgoldhammer</groupId>
+            <artifactId>alfresco-jscript-extension</artifactId>
+            <version>1.7</version>
+        </dependency>
     </dependencies>
 
     <profiles>
