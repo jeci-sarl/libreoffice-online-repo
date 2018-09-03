@@ -20,7 +20,7 @@ import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.LOOLServiceImpl;
 import org.alfresco.model.ContentModel;
 import org.alfresco.service.cmr.repository.*;
-import org.apache.chemistry.opencmis.commons.impl.IOUtils;
+import org.apache.commons.io.IOUtils;
 import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
@@ -36,26 +36,16 @@ public class LOOLGetFileWebScript extends AbstractWebScript {
 
     @Override
     public void execute(WebScriptRequest req, WebScriptResponse res) throws IOException {
-        NodeRef nodeRef = loolService.checkAccessToken(req);
-        ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
+        final NodeRef nodeRef = loolService.checkAccessToken(req);
+        final ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
         res.setContentType(contentProp.getMimetype());
         res.setContentEncoding(contentProp.getEncoding());
 
-        ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
+        final ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
 
-        InputStream inputStream = null;
-        OutputStream outputStream = null;
-        try {
-            inputStream = reader.getContentInputStream();
-            outputStream = res.getOutputStream();
+        try (InputStream inputStream = reader.getContentInputStream();
+                OutputStream outputStream = res.getOutputStream();) {
             IOUtils.copy(inputStream, outputStream);
-        } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
-            if (outputStream != null) {
-                outputStream.close();
-            }
         }
     }
 

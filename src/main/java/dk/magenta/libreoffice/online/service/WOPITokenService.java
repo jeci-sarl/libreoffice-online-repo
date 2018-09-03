@@ -11,6 +11,8 @@ import org.springframework.extensions.webscripts.WebScriptRequest;
  * @author DarkStar1.
  */
 public interface WOPITokenService {
+    String ACCESS_TOKEN = "access_token";
+    String FILE_ID = "fileId";
 
     /**
      * Will return a file nodeRef for the Token in question

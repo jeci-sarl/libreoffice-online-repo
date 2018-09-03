@@ -28,6 +28,9 @@ import org.springframework.extensions.webscripts.WebScriptRequest;
 
 public class LOOLServiceUrlInfoWebScript extends DeclarativeWebScript {
     private static final Logger logger = LoggerFactory.getLogger(LOOLServiceUrlInfoWebScript.class);
+
+    private static final String LOOL_HOST_URL = "lool_host_url";
+
     private String loolServiceUrl;
 
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
@@ -35,7 +38,7 @@ public class LOOLServiceUrlInfoWebScript extends DeclarativeWebScript {
         if (logger.isDebugEnabled()) {
             logger.debug("The service url for WOPI is:" + loolServiceUrl);
         }
-        model.put("lool_host_url", loolServiceUrl);
+        model.put(LOOL_HOST_URL, loolServiceUrl);
 
         return model;
     }

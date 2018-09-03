@@ -45,8 +45,9 @@ import org.springframework.extensions.webscripts.WebScriptRequest;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
 
-public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
+public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements WOPIConstant {
     private static final Logger logger = LoggerFactory.getLogger(LOOLCheckFileInfoWebScript.class);
+    
     private LOOLService loolService;
     private NodeService nodeService;
     private VersionService versionService;
@@ -69,43 +70,42 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
         Map<String, Object> model = new HashMap<>();
         try {
-            NodeRef nodeRef = loolService.checkAccessToken(req);
-            Date lastModifiedDate = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+            final NodeRef nodeRef = loolService.checkAccessToken(req);
+            final Date lastModifiedDate = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
             // Convert lastModifiedTime to ISO 8601 according to:
             // https://github.com/LibreOffice/online/blob/master/wsd/Storage.cpp#L460 or
             // look in the
             // std::unique_ptr<WopiStorage::WOPIFileInfo> WopiStorage::getWOPIFileInfo
-            String dte = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC)
+            final String dte = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC)
                     .format(Instant.ofEpochMilli(lastModifiedDate.getTime()));
             // TODO Some properties are hard coded for now but we should look into making
             // them sysadmin configurable
 
             // BaseFileName need extension, else Lool load it in read-only mode (since
             // 2.1.4)
-            model.put("BaseFileName", (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+            model.put(BASE_FILE_NAME, (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
             // We need to enable this if we want to be able to insert image into the
             // documents
-            model.put("DisableCopy", false);
-            model.put("DisablePrint", false);
-            model.put("DisableExport", false);
-            model.put("HideExportOption", false);
-            model.put("HideSaveOption", false);
-            model.put("HidePrintOption", false);
-            model.put("LastModifiedTime", dte);
-            model.put("OwnerId", nodeService.getProperty(nodeRef, ContentModel.PROP_CREATOR).toString());
-            model.put("Size", getSize(nodeRef));
-            model.put("UserId", AuthenticationUtil.getRunAsUser());
-            model.put("UserCanWrite", true);
-            model.put("UserFriendlyName", AuthenticationUtil.getRunAsUser());
-            model.put("Version", getDocumentVersion(nodeRef));
+            model.put(DISABLE_COPY, false);
+            model.put(DISABLE_PRINT, false);
+            model.put(DISABLE_EXPORT, false);
+            model.put(HIDE_EXPORT_OPTION, false);
+            model.put(HIDE_SAVE_OPTION, false);
+            model.put(HIDE_PRINT_OPTION, false);
+            model.put(LAST_MODIFIED_TIME, dte);
+            model.put(OWNER_ID, nodeService.getProperty(nodeRef, ContentModel.PROP_CREATOR).toString());
+            model.put(SIZE, getSize(nodeRef));
+            model.put(USER_ID, AuthenticationUtil.getRunAsUser());
+            model.put(USER_CAN_WRITE, true);
+            model.put(USER_FRIENDLY_NAME, AuthenticationUtil.getRunAsUser());
+            model.put(VERSION, getDocumentVersion(nodeRef));
             // Host from which token generation request originated
-            model.put("PostMessageOrigin", loolService.getAlfExternalHost().toString());
+            model.put(POST_MESSAGE_ORIGIN, loolService.getAlfExternalHost().toString());
             // Search https://www.collaboraoffice.com/category/community-en/ for
             // EnableOwnerTermination
-            model.put("EnableOwnerTermination", false);
+            model.put(ENABLE_OWNER_TERMINATION, false);
         } catch (Exception ge) {
-            throw new WebScriptException(Status.STATUS_BAD_REQUEST,
-                    "error returning file nodeRef\nReason:\n" + ge.getMessage());
+            throw new WebScriptException(Status.STATUS_BAD_REQUEST, "error returning file nodeRef", ge);
         }
         return model;
     }
@@ -117,7 +117,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
      * @return
      */
     public long getSize(NodeRef nodeRef) {
-        ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
+        final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
         return contentData.getSize();
     }
 
@@ -131,9 +131,9 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
      * @throws IOException
      */
     protected String getSHAhash(NodeRef nodeRef) throws IOException {
-        ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
+        final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
         try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            final MessageDigest md = MessageDigest.getInstance("SHA-256");
             md.update(contentData.getContentUrl().getBytes());
             byte[] aMessageDigest = md.digest();
 

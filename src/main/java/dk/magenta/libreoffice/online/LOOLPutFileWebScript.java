@@ -45,23 +45,24 @@ import dk.magenta.libreoffice.online.service.PersonInfo;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 import dk.magenta.libreoffice.online.service.WOPITokenService;
 
-public class LOOLPutFileWebScript extends AbstractWebScript {
+public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConstant {
     private static final Log logger = LogFactory.getLog(LOOLPutFileWebScript.class);
+
     private WOPITokenService wopiTokenService;
     private NodeService nodeService;
     private ContentService contentService;
     private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
 
+    private static final String LOOL_AUTOSAVE = "lool:autosave";
+
     @Override
     public void execute(WebScriptRequest req, WebScriptResponse res) throws IOException {
 
-        String wopiOverrideHeader = req.getHeader("X-WOPI-Override");
-        if (wopiOverrideHeader == null) {
-            wopiOverrideHeader = req.getHeader("X-WOPIOverride");
-        }
+        final String wopiOverrideHeader = req.getHeader(X_WOPI_OVERRIDE);
+
         if (wopiOverrideHeader == null || !wopiOverrideHeader.equals("PUT")) {
-            throw new WebScriptException("X-WOPI-Override header must be present and equal to 'PUT'");
+            throw new WebScriptException(X_WOPI_OVERRIDE + " header must be present and equal to 'PUT'");
         }
 
         /*
@@ -69,7 +70,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
          * 'false' when triggered by explicit user operation (Save button or menu
          * entry).
          */
-        final String hdrAutosave = req.getHeader("X-LOOL-WOPI-IsAutosave");
+        final String hdrAutosave = req.getHeader(X_LOOL_WOPI_IS_AUTOSAVE);
         final boolean isAutosave = hdrAutosave != null && Boolean.parseBoolean(hdrAutosave.trim());
 
         if (logger.isDebugEnabled()) {
@@ -106,7 +107,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
                                     if (isAutosave) {
                                         versionProperties.put(VersionModel.PROP_DESCRIPTION, "Edit with Collabora");
                                     }
-                                    versionProperties.put("lool:autosave", isAutosave);
+                                    versionProperties.put(LOOL_AUTOSAVE, isAutosave);
                                     versionService.createVersion(nodeRef, versionProperties);
 
                                 } finally {
