@@ -14,12 +14,6 @@ public class PersonInfo {
     private final String firstName;
     private final String lastName;
 
-    private PersonService personService;
-
-    public void setPersonService(PersonService personService) {
-        this.personService = personService;
-    }
-
     public PersonInfo(NodeRef nodeRef, String userName, String firstName, String lastName) {
         this.nodeRef = nodeRef;
         this.userName = userName;

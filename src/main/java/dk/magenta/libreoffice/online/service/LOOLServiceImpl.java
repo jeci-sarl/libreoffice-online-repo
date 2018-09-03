@@ -51,7 +51,6 @@ public class LOOLServiceImpl implements LOOLService {
     private WOPILoader wopiLoader;
     private NodeService nodeService;
     private SysAdminParams sysAdminParams;
-    private WOPITokenService wopiTokenService;
 
     private SecureRandom random = new SecureRandom();
 
@@ -83,10 +82,6 @@ public class LOOLServiceImpl implements LOOLService {
 
     public void setAlfExternalHost(URL alfExternalHost) {
         this.alfExternalHost = alfExternalHost;
-    }
-
-    public void setWopiTokenService(WOPITokenService wopiTokenService) {
-        this.wopiTokenService = wopiTokenService;
     }
 
     /**
