@@ -105,10 +105,12 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
                             writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
                             writer.guessEncoding();
                             
-                            
                             Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
                             versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
-                            versionProperties.put(VersionModel.PROP_DESCRIPTION, isAutosave?"LOOL autosave":"LOOL manual save");
+                            if (isAutosave) {
+                                versionProperties.put(VersionModel.PROP_DESCRIPTION, "Edit with Collabora");
+                            }
+                            versionProperties.put("lool:autosave", isAutosave);
                             versionService.createVersion(nodeRef, versionProperties);
                             
                         } finally {

@@ -43,6 +43,12 @@
                         <facetable>true</facetable>
                     </index>
                 </property>
+                <property name="lool:autosave">
+                    <title>Auto Save</title>
+                    <description>Auto Save by Lool</description>
+                    <type>d:boolean</type>
+                    <default>true</default>
+                </property>
             </properties>
             <associations />
             <overrides />
