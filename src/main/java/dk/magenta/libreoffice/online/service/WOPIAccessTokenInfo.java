@@ -23,8 +23,8 @@ public class WOPIAccessTokenInfo {
     }
 
     /**
-     * Return whether the access token has been issued and not expired at
-     * the current time.
+     * Return whether the access token has been issued and not expired at the
+     * current time.
      *
      * @return
      */
@@ -34,6 +34,7 @@ public class WOPIAccessTokenInfo {
 
     /**
      * Return whether the access token is valid for the given date.
+     * 
      * @return
      */
     public boolean isValid(Date when) {

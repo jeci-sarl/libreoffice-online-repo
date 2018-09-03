@@ -45,7 +45,7 @@ public class LOOLServiceImpl implements LOOLService {
     private static final int DEFAULT_WOPI_PORT = 9980;
 
     private URL wopiBaseURL;
-    //In case alfresco is behind a proxy then we need the proxy's host address
+    // In case alfresco is behind a proxy then we need the proxy's host address
     private URL alfExternalHost;
     private URL wopiDiscoveryURL;
     private WOPILoader wopiLoader;
@@ -55,18 +55,14 @@ public class LOOLServiceImpl implements LOOLService {
     private SecureRandom random = new SecureRandom();
 
     /**
-     * This holds a map of the the "token info(s)" mapped to a file.
-     * Each token info is mapped to a user, so in essence a user may only have one token info per file.
-     * <FileId, <userName, tokenInfo> >
+     * This holds a map of the the "token info(s)" mapped to a file. Each token info
+     * is mapped to a user, so in essence a user may only have one token info per
+     * file. <FileId, <userName, tokenInfo> >
      * <p>
-     * {
-     * fileId: { <== The id of the nodeRef that refers to the file
-     * userName: WOPIAccessTokenInfo
-     * }
-     * }
+     * { fileId: { <== The id of the nodeRef that refers to the file userName:
+     * WOPIAccessTokenInfo } }
      */
-    private Map<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap
-            = new HashMap<>();
+    private Map<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap = new HashMap<>();
 
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
@@ -85,11 +81,12 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
-     * Generate and store an access token only valid for the current
-     * user/file id combination.
+     * Generate and store an access token only valid for the current user/file id
+     * combination.
      *
-     * If an existing access token exists for the user/file id combination,
-     * then extend its expiration date and return it.
+     * If an existing access token exists for the user/file id combination, then
+     * extend its expiration date and return it.
+     * 
      * @param fileId
      * @return
      */
@@ -103,9 +100,8 @@ public class LOOLServiceImpl implements LOOLService {
         if (tokenInfoMap != null) {
             tokenInfo = tokenInfoMap.get(userName);
             if (tokenInfo != null) {
-                if (tokenInfo.isValid() &&
-                        tokenInfo.getFileId().equals(fileId) &&
-                        tokenInfo.getUserName().equals(userName)) {
+                if (tokenInfo.isValid() && tokenInfo.getFileId().equals(fileId)
+                        && tokenInfo.getUserName().equals(userName)) {
                     // Renew token for a new time-to-live period.
                     tokenInfo.setExpiresAt(newExpiresAt);
                 } else {
@@ -115,8 +111,7 @@ public class LOOLServiceImpl implements LOOLService {
             }
         }
         if (tokenInfo == null) {
-            tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(),
-                    now, newExpiresAt, fileId, userName);
+            tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt, fileId, userName);
             if (fileIdAccessTokenMap.get(fileId) == null)
                 fileIdAccessTokenMap.put(fileId, new HashMap<String, WOPIAccessTokenInfo>());
             fileIdAccessTokenMap.get(fileId).put(userName, tokenInfo);
@@ -126,6 +121,7 @@ public class LOOLServiceImpl implements LOOLService {
 
     /**
      * Generates a random access token.
+     * 
      * @return
      */
     @Override
@@ -134,8 +130,8 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
-     * Return stored info about the given token if it exists. Otherwise,
-     * return null.
+     * Return stored info about the given token if it exists. Otherwise, return
+     * null.
      *
      * @param accessToken
      * @param fileId
@@ -211,6 +207,7 @@ public class LOOLServiceImpl implements LOOLService {
 
     /**
      * Returns the id component of a NodeRef
+     * 
      * @param nodeRef
      * @return
      */
@@ -220,9 +217,9 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
-     * Returns a NodeRef given a file Id.
-     * Note:
-     * Checks to see if the node exists aren't performed
+     * Returns a NodeRef given a file Id. Note: Checks to see if the node exists
+     * aren't performed
+     * 
      * @param fileId
      * @return
      */
@@ -232,9 +229,10 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
-     * In the case that Alfresco is behind a proxy and not using the proxy hostname in the alfresco config section of
-     * the alfresco-global.properties file, then we should be able to set a property in alfresco-global.properties for
-     * this service to use.
+     * In the case that Alfresco is behind a proxy and not using the proxy hostname
+     * in the alfresco config section of the alfresco-global.properties file, then
+     * we should be able to set a property in alfresco-global.properties for this
+     * service to use.
      *
      * @return
      */
@@ -242,11 +240,11 @@ public class LOOLServiceImpl implements LOOLService {
     public String getAlfrescoProxyDomain() {
         return alfExternalHost.getHost();
     }
-    
+
     @Override
     public URL getAlfExternalHost() {
-		return alfExternalHost;
-	}
+        return alfExternalHost;
+    }
 
     public void setSysAdminParams(SysAdminParams sysAdminParams) {
         this.sysAdminParams = sysAdminParams;
@@ -257,24 +255,23 @@ public class LOOLServiceImpl implements LOOLService {
             try {
                 logger.warn("******* Warning *******\nThe wopiBaseURL param wasn't found in alfresco-global.properties."
                         + "Assuming lool service is on the same host and setting url to match.");
-                wopiBaseURL = new URL("https", sysAdminParams.getAlfrescoHost(),
-                        DEFAULT_WOPI_PORT, "/");
+                wopiBaseURL = new URL("https", sysAdminParams.getAlfrescoHost(), DEFAULT_WOPI_PORT, "/");
             } catch (MalformedURLException e) {
-                throw new AlfrescoRuntimeException("Invalid WOPI Base URL: "
-                        + this.wopiBaseURL, e);
+                throw new AlfrescoRuntimeException("Invalid WOPI Base URL: " + this.wopiBaseURL, e);
             }
         }
 
-        //We should actually never throw an exception here unless of course.......
+        // We should actually never throw an exception here unless of course.......
         if (wopiDiscoveryURL == null) {
             try {
-                wopiDiscoveryURL = new URL(wopiBaseURL.getProtocol() + wopiBaseURL.getHost() + wopiBaseURL.getPort() + "/discovery");
-                logger.warn("******* Warning *******\nThe wopiDiscoveryURL param wasn't found in " +
-                        "alfresco-global.properties. \nWe will assume that the discovery.xml file is hosted on this" +
-                        "server and construct a url path based on this: "+ wopiDiscoveryURL.toString() );
+                wopiDiscoveryURL = new URL(
+                        wopiBaseURL.getProtocol() + wopiBaseURL.getHost() + wopiBaseURL.getPort() + "/discovery");
+                logger.warn("******* Warning *******\nThe wopiDiscoveryURL param wasn't found in "
+                        + "alfresco-global.properties. \nWe will assume that the discovery.xml file is hosted on this"
+                        + "server and construct a url path based on this: " + wopiDiscoveryURL.toString());
             } catch (MalformedURLException mue) {
-                logger.error("=== Error ===\nUnable to create discovery URL. (Should never be thrown so this is an " +
-                        "interesting situation we find ourselves.. To the bat cave Robin!!)");
+                logger.error("=== Error ===\nUnable to create discovery URL. (Should never be thrown so this is an "
+                        + "interesting situation we find ourselves.. To the bat cave Robin!!)");
                 throw new AlfrescoRuntimeException("Invalid WOPI Base URL: " + this.wopiBaseURL, mue);
             }
         }
@@ -303,16 +300,15 @@ public class LOOLServiceImpl implements LOOLService {
                 try {
                     loadDiscoveryXML();
                 } catch (IOException e) {
-                    logger.error("Failed to fetch discovery.xml file from server ("+ wopiDiscoveryURL.toString()+")", e);
+                    logger.error("Failed to fetch discovery.xml file from server (" + wopiDiscoveryURL.toString() + ")",
+                            e);
                     throw e;
                 }
             }
             XPathFactory xPathFactory = XPathFactory.newInstance();
             XPath xPath = xPathFactory.newXPath();
-            String xPathExpr =
-                    ("/wopi-discovery/net-zone/app[@name='${mimeType}']/action[@name='${action}']/@urlsrc")
-                            .replace("${mimeType}", mimeType)
-                            .replace("${action}", action);
+            String xPathExpr = ("/wopi-discovery/net-zone/app[@name='${mimeType}']/action[@name='${action}']/@urlsrc")
+                    .replace("${mimeType}", mimeType).replace("${action}", action);
             try {
                 return xPath.evaluate(xPathExpr, discoveryDoc);
             } catch (XPathExpressionException e) {
@@ -333,8 +329,7 @@ public class LOOLServiceImpl implements LOOLService {
          * @return
          */
         private Document parse(InputStream discoveryInputStream) {
-            DocumentBuilderFactory builderFactory =
-                    DocumentBuilderFactory.newInstance();
+            DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
             try {
                 DocumentBuilder builder = builderFactory.newDocumentBuilder();
                 return builder.parse(discoveryInputStream);
@@ -346,7 +341,8 @@ public class LOOLServiceImpl implements LOOLService {
 
         private InputStream fetchDiscoveryXML() throws IOException {
             HttpURLConnection connection = (HttpURLConnection) this.wopiDiscoveryURL.openConnection();
-            logger.debug("\n--- debug ---\nHttp connection for discovery xml returned with a [" + connection.getResponseCode() + "] response code.\n");
+            logger.debug("\n--- debug ---\nHttp connection for discovery xml returned with a ["
+                    + connection.getResponseCode() + "] response code.\n");
             try {
                 byte[] conn = IOUtils.toByteArray(connection.getInputStream());
                 return new ByteArrayInputStream(conn);

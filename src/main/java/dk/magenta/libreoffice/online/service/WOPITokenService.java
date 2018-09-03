@@ -4,8 +4,9 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
 /**
- * Contains just two methods for now but more maybe added later as we may want to perform several actions from the
- * token context as opposed from the LOOLService context
+ * Contains just two methods for now but more maybe added later as we may want
+ * to perform several actions from the token context as opposed from the
+ * LOOLService context
  *
  * @author DarkStar1.
  */
@@ -13,6 +14,7 @@ public interface WOPITokenService {
 
     /**
      * Will return a file nodeRef for the Token in question
+     * 
      * @param tokenInfo
      * @return
      */
@@ -20,6 +22,7 @@ public interface WOPITokenService {
 
     /**
      * Returns a PersonInfo for the token in question
+     * 
      * @param tokenInfo
      * @return
      */
@@ -27,6 +30,7 @@ public interface WOPITokenService {
 
     /**
      * Gets a token from the request params
+     * 
      * @param req
      * @return
      */

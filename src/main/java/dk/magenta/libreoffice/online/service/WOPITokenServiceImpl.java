@@ -18,7 +18,7 @@ public class WOPITokenServiceImpl implements WOPITokenService {
     PersonService personService;
     LOOLService loolService;
 
-    //<editor-fold desc="Service setters">
+    // <editor-fold desc="Service setters">
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
     }
@@ -31,7 +31,7 @@ public class WOPITokenServiceImpl implements WOPITokenService {
         this.loolService = loolService;
     }
 
-    //</editor-fold>
+    // </editor-fold>
 
     /**
      * Will return a file nodeRef for the Token in question
@@ -42,9 +42,10 @@ public class WOPITokenServiceImpl implements WOPITokenService {
     @Override
     public NodeRef getFileNodeRef(WOPIAccessTokenInfo tokenInfo) {
         NodeRef fileNodeRef = new NodeRef("workspace", "SpacesStore", tokenInfo.getFileId());
-        if (nodeService.exists(fileNodeRef))
+        if (nodeService.exists(fileNodeRef)) {
             return fileNodeRef;
-        else return null;
+        }
+        return null;
     }
 
     /**
@@ -55,17 +56,18 @@ public class WOPITokenServiceImpl implements WOPITokenService {
      */
     @Override
     public PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo) {
-        try{
+        try {
             NodeRef personNode = personService.getPerson(tokenInfo.getUserName());
             PersonInfo personInfo = new PersonInfo(personService.getPerson(personNode));
             return personInfo;
-        }
-        catch(NoSuchPersonException | NullPointerException npe){
+        } catch (NoSuchPersonException | NullPointerException npe) {
             npe.printStackTrace();
 
             if (npe.getClass().equals(NoSuchPersonException.class)) {
-                logger.error("Unable to retrieve person from user id [" + tokenInfo.getUserName() + "] specified in token.");
-                throw new NoSuchPersonException("Unable to verify that the person exists. Please contact the system administrator");
+                logger.error(
+                        "Unable to retrieve person from user id [" + tokenInfo.getUserName() + "] specified in token.");
+                throw new NoSuchPersonException(
+                        "Unable to verify that the person exists. Please contact the system administrator");
             }
             if (npe.getClass().equals(NullPointerException.class)) {
                 logger.error("Token info is null.");
