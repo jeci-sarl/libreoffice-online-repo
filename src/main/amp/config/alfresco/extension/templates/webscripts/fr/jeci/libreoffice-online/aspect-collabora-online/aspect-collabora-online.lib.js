@@ -4,7 +4,7 @@ var ASPECT_LOOL = "lool:collaboraOnline";
 
 /**
  * Main script entry point
- * 
+ *
  * @method main
  */
 function main() {
@@ -12,7 +12,7 @@ function main() {
     var params = {}, files, rootNode, result;
 
     logger.log("StoreType=" + url.templateArgs.store_type);
-    
+
     if (url.templateArgs.store_type != undefined) {
         params = getNodeRefInputParams();
     } else {
@@ -31,7 +31,7 @@ function main() {
 
         result = {
             nodeRef : node.nodeRef.toString(),
-            action : "addAspect",
+            action : "_action_",
             success : false
         }
 
@@ -39,7 +39,7 @@ function main() {
 
         policies.disableForNode(node);
 
-        editNode(node);
+        editNode(result, node);
 
         node.save();
         node.reset();
@@ -58,7 +58,7 @@ function main() {
 
 /**
  * Get and check existence of mandatory input parameters (nodeRef-based)
- * 
+ *
  * @method getNodeRefInputParams
  * @return {object|string} object literal containing parameters value or string
  *         error
@@ -72,7 +72,7 @@ logger.log("getNodeRefInputParams");
             storeId = url.templateArgs.store_id,
             id = url.templateArgs.id;
 
-        var nodeRef = storeType + "://" + storeId + (id == null ? "" : ("/" + id)), 
+        var nodeRef = storeType + "://" + storeId + (id == null ? "" : ("/" + id)),
             rootNode = ParseArgs.resolveNode(nodeRef);
 
         if (rootNode === null) {
