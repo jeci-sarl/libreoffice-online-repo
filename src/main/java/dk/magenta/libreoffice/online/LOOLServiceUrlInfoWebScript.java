@@ -16,14 +16,15 @@ limitations under the License.
 */
 package dk.magenta.libreoffice.online;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.extensions.webscripts.*;
-
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.extensions.webscripts.Cache;
+import org.springframework.extensions.webscripts.DeclarativeWebScript;
+import org.springframework.extensions.webscripts.Status;
+import org.springframework.extensions.webscripts.WebScriptRequest;
 
 public class LOOLServiceUrlInfoWebScript extends DeclarativeWebScript {
     private static final Logger logger = LoggerFactory.getLogger(LOOLServiceUrlInfoWebScript.class);
@@ -31,17 +32,11 @@ public class LOOLServiceUrlInfoWebScript extends DeclarativeWebScript {
 
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
         Map<String, Object> model = new HashMap<>();
-        try {
-                URL loolHost = new URL(loolServiceUrl);
-
-            logger.debug("\n\n------- The service url for WOPI is: ---------\n ("+loolServiceUrl+")\n\n");
-            model.put("lool_host_url", loolServiceUrl);
-
+        if (logger.isDebugEnabled()) {
+            logger.debug("The service url for WOPI is:" + loolServiceUrl);
         }
-        catch(MalformedURLException ge){
-            logger.error("=== Error ===\nInvalid service URL format. Did you make a typo somewhere??");
-            throw new WebScriptException(Status.STATUS_BAD_REQUEST, "The WOPI Service URL is invalid");
-        }
+        model.put("lool_host_url", loolServiceUrl);
+
         return model;
     }
 

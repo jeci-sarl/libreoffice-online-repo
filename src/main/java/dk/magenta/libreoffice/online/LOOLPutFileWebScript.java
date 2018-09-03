@@ -64,75 +64,74 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
             throw new WebScriptException("X-WOPI-Override header must be present and equal to 'PUT'");
         }
 
-		/*
-		 * will have the value 'true' when the PutFile is triggered by autosave, and
-		 * 'false' when triggered by explicit user operation (Save button or menu
-		 * entry).
-		 */
-		if (logger.isDebugEnabled()) {
-			for (String hdr : req.getHeaderNames()) {
-				for (String val : req.getHeaderValues(hdr)) {
-					logger.debug("HDR " + hdr + ":" + val);
-				}
-			}
-		}
-		String hdrAutosave = req.getHeader("X-LOOL-WOPI-IsAutosave");
-		boolean isAutosave = hdrAutosave != null && Boolean.parseBoolean(hdrAutosave.trim());
+        /*
+         * will have the value 'true' when the PutFile is triggered by autosave, and
+         * 'false' when triggered by explicit user operation (Save button or menu
+         * entry).
+         */
+        final String hdrAutosave = req.getHeader("X-LOOL-WOPI-IsAutosave");
+        final boolean isAutosave = hdrAutosave != null && Boolean.parseBoolean(hdrAutosave.trim());
 
-		if (logger.isDebugEnabled()) {
-			logger.debug("Request " + (isAutosave ? "is" : "is not") + " AUTOSAVE");
-		}
-		
-        
+        if (logger.isDebugEnabled()) {
+            logger.debug("Request " + (isAutosave ? "is" : "is not") + " AUTOSAVE");
+        }
+
         try {
-            WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
-            //Verifying that the user actually exists
-            PersonInfo person = wopiTokenService.getUserInfoOfToken(tokenInfo);
+            final WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
+            // Verifying that the user actually exists
+            final PersonInfo person = wopiTokenService.getUserInfoOfToken(tokenInfo);
             final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
-            if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != tokenInfo.getUserName())
+            if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != tokenInfo.getUserName()) {
                 throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
                         "The user no longer appears to exist.");
-
-            if (tokenInfo != null) {
-                //https://community.alfresco.com/message/809749-re-why-is-the-modifier-of-a-content-a-random-user-from-the-list-of-logged-in-users?commentID=809749&et=watches.email.thread#comment-809749
-                retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-                    @Override
-                    public Void execute() throws Throwable {
-                        try {
-                            AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
-                            ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
-                            writer.putContent(req.getContent().getInputStream());
-                            writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-                            writer.guessEncoding();
-                            
-                            Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
-                            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
-                            if (isAutosave) {
-                                versionProperties.put(VersionModel.PROP_DESCRIPTION, "Edit with Collabora");
-                            }
-                            versionProperties.put("lool:autosave", isAutosave);
-                            versionService.createVersion(nodeRef, versionProperties);
-                            
-                        } finally {
-                            AuthenticationUtil.clearCurrentSecurityContext();
-                        }
-                        return null;
-                    }
-                }, false, true);
             }
 
-            logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
-                    + nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIER));
+            if (tokenInfo != null) {
+                // https://community.alfresco.com/message/809749-re-why-is-the-modifier-of-a-content-a-random-user-from-the-list-of-logged-in-users?commentID=809749&et=watches.email.thread#comment-809749
+                retryingTransactionHelper
+                        .doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+                            @Override
+                            public Void execute() throws Throwable {
+                                try {
+                                    AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
+                                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT,
+                                            true);
+                                    writer.putContent(req.getContent().getInputStream());
+                                    writer.guessMimetype(
+                                            (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+                                    writer.guessEncoding();
+
+                                    Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
+                                    versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                                    if (isAutosave) {
+                                        versionProperties.put(VersionModel.PROP_DESCRIPTION, "Edit with Collabora");
+                                    }
+                                    versionProperties.put("lool:autosave", isAutosave);
+                                    versionService.createVersion(nodeRef, versionProperties);
+
+                                } finally {
+                                    AuthenticationUtil.clearCurrentSecurityContext();
+                                }
+                                return null;
+                            }
+                        }, false, true);
+            }
+
+            if (logger.isInfoEnabled()) {
+                logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
+                        + nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIER));
+            }
 
         } catch (ContentIOException | NullPointerException | WebScriptException we) {
             we.printStackTrace();
-            if (we.getClass() == ContentIOException.class)
+            if (we.getClass() == ContentIOException.class) {
                 throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "Error writing to file");
-            else if (we.getClass() == WebScriptException.class)
+            } else if (we.getClass() == WebScriptException.class) {
                 throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token invalid or expired");
-            else
-                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "\nUnidentified problem writing to file" +
-                        "please consult system administrator for help on this issue.\n ");
+            } else {
+                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
+                        "Unidentified problem writing to file please consult system administrator for help on this issue.");
+            }
         }
     }
 
@@ -151,7 +150,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript {
     public void setVersionService(VersionService versionService) {
         this.versionService = versionService;
     }
-    
+
     public void setRetryingTransactionHelper(RetryingTransactionHelper retryingTransactionHelper) {
         this.retryingTransactionHelper = retryingTransactionHelper;
     }

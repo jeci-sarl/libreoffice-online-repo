@@ -28,8 +28,7 @@ import java.util.Map;
 public class LOOLGetTokenWebScript extends DeclarativeWebScript {
     private LOOLService loolService;
 
-    protected Map<String, Object> executeImpl(
-            WebScriptRequest req, Status status, Cache cache) {
+    protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
         Map<String, Object> model = new HashMap<>();
         String nodeRefStr = req.getParameter("nodeRef");
         if (nodeRefStr == null) {
@@ -45,8 +44,7 @@ public class LOOLGetTokenWebScript extends DeclarativeWebScript {
         try {
             wopiSrcUrl = loolService.getWopiSrcURL(nodeRef, action);
         } catch (IOException e) {
-            status.setCode(Status.STATUS_INTERNAL_SERVER_ERROR, "Failed to " +
-                    "get wopiSrcURL");
+            status.setCode(Status.STATUS_INTERNAL_SERVER_ERROR, "Failed to get wopiSrcURL");
             return model;
         }
         model.put("access_token", tokenInfo.getAccessToken());

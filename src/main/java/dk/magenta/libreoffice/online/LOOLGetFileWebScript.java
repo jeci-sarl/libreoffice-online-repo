@@ -59,7 +59,6 @@ public class LOOLGetFileWebScript extends AbstractWebScript {
         }
     }
 
-
     public void setLoolService(LOOLServiceImpl loolService) {
         this.loolService = loolService;
     }
