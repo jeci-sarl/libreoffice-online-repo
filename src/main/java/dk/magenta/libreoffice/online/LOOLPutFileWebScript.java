@@ -54,7 +54,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
 
-    private static final String LOOL_AUTOSAVE = "lool:autosave";
+    public static final String LOOL_AUTOSAVE = "lool:autosave";
 
     @Override
     public void execute(final WebScriptRequest req, WebScriptResponse res) throws IOException {

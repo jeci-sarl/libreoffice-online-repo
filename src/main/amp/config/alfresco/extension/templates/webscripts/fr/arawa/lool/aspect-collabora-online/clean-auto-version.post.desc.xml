@@ -1,0 +1,9 @@
+<webscript>
+    <shortname>LibreOffice Online Clean Auto Version</shortname>
+    <description>LibreOffice Online - clean version create by autosave</description>
+    <url>/lool/version/clean/{store_type}/{store_id}/{id}</url>
+    <family>LibreOffice Online</family>
+    <authentication>admin</authentication>
+    <transaction>required</transaction>
+    <format default="json"></format>
+</webscript>
