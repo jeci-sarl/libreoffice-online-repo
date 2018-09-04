@@ -57,7 +57,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private static final String LOOL_AUTOSAVE = "lool:autosave";
 
     @Override
-    public void execute(WebScriptRequest req, WebScriptResponse res) throws IOException {
+    public void execute(final WebScriptRequest req, WebScriptResponse res) throws IOException {
 
         final String wopiOverrideHeader = req.getHeader(X_WOPI_OVERRIDE);
 
