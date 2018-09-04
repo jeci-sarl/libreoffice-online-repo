@@ -349,7 +349,7 @@ public class LOOLServiceImpl implements LOOLService {
 
             if (logger.isDebugEnabled()) {
                 logger.debug("Http connection for discovery xml returned with a [" + connection.getResponseCode()
-                        + "] response code.\n");
+                        + "] response code.");
             }
 
             try {

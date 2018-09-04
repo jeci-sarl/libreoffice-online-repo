@@ -31,7 +31,7 @@ public class LOOLGetTokenWebScript extends DeclarativeWebScript {
     private static final String ACCESS_TOKEN = "access_token";
     private static final String PARAM_ACTION = "action";
     private static final String PARAM_NODE_REF = "nodeRef";
-    
+
     private LOOLService loolService;
 
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
@@ -40,26 +40,25 @@ public class LOOLGetTokenWebScript extends DeclarativeWebScript {
         if (nodeRefStr == null) {
             throw new WebScriptException("No 'nodeRef' parameter supplied");
         }
-        
+
         final NodeRef nodeRef = new NodeRef(nodeRefStr);
         final String action = req.getParameter(PARAM_ACTION);
         if (action == null) {
             throw new WebScriptException("No 'action' parameter supplied");
         }
-        
+
         final String fileIdForNodeRef = loolService.getFileIdForNodeRef(nodeRef);
         final WOPIAccessTokenInfo tokenInfo = loolService.createAccessToken(fileIdForNodeRef);
-        
-        String wopiSrcUrl;
+
         try {
-            wopiSrcUrl = loolService.getWopiSrcURL(nodeRef, action);
+            String wopiSrcUrl = loolService.getWopiSrcURL(nodeRef, action);
+
+            model.put(ACCESS_TOKEN, tokenInfo.getAccessToken());
+            model.put(ACCESS_TOKEN_TTL, tokenInfo.getExpiresAt().getTime());
+            model.put(WOPI_SRC_URL, wopiSrcUrl);
         } catch (IOException e) {
             status.setCode(Status.STATUS_INTERNAL_SERVER_ERROR, "Failed to get wopiSrcURL");
-            return model;
         }
-        model.put(ACCESS_TOKEN, tokenInfo.getAccessToken());
-        model.put(ACCESS_TOKEN_TTL, tokenInfo.getExpiresAt().getTime());
-        model.put(WOPI_SRC_URL, wopiSrcUrl);
         return model;
     }
 

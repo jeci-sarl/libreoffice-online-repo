@@ -140,7 +140,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             return Base64.getEncoder().encodeToString(aMessageDigest);
         } catch (NoSuchAlgorithmException nsae) {
             logger.error("Unable to find encoding algorithm");
-            throw new IOException("Unable to generate a hash for the requested file");
+            throw new IOException("Unable to generate a hash for the requested file", nsae);
         }
     }
 

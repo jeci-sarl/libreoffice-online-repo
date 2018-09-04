@@ -123,16 +123,18 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
                         + nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIER));
             }
 
-        } catch (ContentIOException | NullPointerException | WebScriptException we) {
-            we.printStackTrace();
-            if (we.getClass() == ContentIOException.class) {
-                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "Error writing to file");
-            } else if (we.getClass() == WebScriptException.class) {
-                throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token invalid or expired");
-            } else {
-                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
-                        "Unidentified problem writing to file please consult system administrator for help on this issue.");
-            }
+        } catch (ContentIOException we) {
+            final String msg = "Error writing to file";
+            logger.error(msg, we);
+            throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, msg);
+        } catch (WebScriptException we) {
+            final String msg = "Access token invalid or expired";
+            logger.error(msg, we);
+            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, msg);
+        } catch (NullPointerException we) {
+            final String msg = "Unidentified problem writing to file please consult system administrator for help on this issue";
+            logger.error(msg, we);
+            throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, msg);
         }
     }
 
