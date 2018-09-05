@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.alfresco.service.ServiceRegistry;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.version.Version;
 import org.alfresco.service.cmr.version.VersionHistory;
@@ -33,73 +32,89 @@ public class CleanVersionWebScript extends DeclarativeWebScript {
     private static final String PARAM_KEEP_EXP = "keep_exp";
     private static final String PARAM_KEEP_AUTO = "keep_auto";
 
-    private ServiceRegistry serviceRegistry;
+    private VersionService versionService;
 
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
         final Map<String, Object> model = new HashMap<>();
 
-        final Map<String, String> templateArgs = req.getServiceMatch().getTemplateVars();
-        final String storeType = WebscriptHelper.getParam(templateArgs, PARAM_STORE_TYPE);
-        final String storeId = WebscriptHelper.getParam(templateArgs, PARAM_STORE_ID);
-        final String guid = WebscriptHelper.getParam(templateArgs, PARAM_ID);
-        final NodeRef nodeRef = new NodeRef(storeType, storeId, guid);
+        try {
+            final Map<String, String> templateArgs = req.getServiceMatch().getTemplateVars();
+            final String storeType = WebscriptHelper.getParam(templateArgs, PARAM_STORE_TYPE);
+            final String storeId = WebscriptHelper.getParam(templateArgs, PARAM_STORE_ID);
+            final String guid = WebscriptHelper.getParam(templateArgs, PARAM_ID);
+            final NodeRef nodeRef = new NodeRef(storeType, storeId, guid);
 
-        // Number automatique version to keep
-        Integer keepAuto = WebscriptHelper.intergerValue(templateArgs, PARAM_KEEP_AUTO);
-        keepAuto = keepAuto == null ? -1 : keepAuto;
-
-        // Number explicit version to keep
-        Integer keepExp = WebscriptHelper.intergerValue(templateArgs, PARAM_KEEP_EXP);
-        keepExp = keepExp == null ? -1 : keepExp;
-
-        // Removing version by using Alfresco Java API
-        final VersionService versionService = serviceRegistry.getVersionService();
-        final VersionHistory history = versionService.getVersionHistory(nodeRef);
-
-        int countAuto = 0;
-        int countExp = 0;
-        for (Version version : history.getAllVersions()) {
-            Serializable loolautosave = version.getVersionProperties().get(LOOLPutFileWebScript.LOOL_AUTOSAVE);
-            if (loolautosave == null) {
-                if (logger.isDebugEnabled()) {
-                    logger.debug("v." + version.getVersionLabel() + " - keep");
-                }
-
-                // Not Lool Version, ignoring
-                continue;
+            if (logger.isDebugEnabled()) {
+                logger.error("Cleaning Noderef " + nodeRef);
             }
 
-            Boolean autosave = (Boolean) loolautosave;
-            if (autosave && keepAuto >= 0) {
-                // Removing old auto-save version
-                if (++countAuto > keepAuto) {
+            // Number automatique version to keep
+            Integer keepAuto = WebscriptHelper.intergerValue(req, PARAM_KEEP_AUTO);
+            keepAuto = keepAuto == null ? -1 : keepAuto;
+
+            if (logger.isDebugEnabled()) {
+                logger.error("Keep " + keepAuto + " auto-save versions");
+            }
+
+            // Number explicit version to keep
+            Integer keepExp = WebscriptHelper.intergerValue(req, PARAM_KEEP_EXP);
+            keepExp = keepExp == null ? -1 : keepExp;
+
+            if (logger.isDebugEnabled()) {
+                logger.error("Keep " + keepExp + " explicit versions");
+            }
+
+            // Removing version by using Alfresco Java API
+            final VersionHistory history = versionService.getVersionHistory(nodeRef);
+
+            int countAuto = 0;
+            int countExp = 0;
+            for (Version version : history.getAllVersions()) {
+                Serializable loolautosave = version.getVersionProperties().get(LOOLPutFileWebScript.LOOL_AUTOSAVE);
+                if (loolautosave == null) {
                     if (logger.isDebugEnabled()) {
-                        logger.debug("v." + version.getVersionLabel() + " - remove auto");
+                        logger.debug("v." + version.getVersionLabel() + " - not lool - keep");
                     }
 
-                    versionService.deleteVersion(nodeRef, version);
+                    // Not Lool Version, ignoring
+                    continue;
                 }
-            }
 
-            if (!autosave && keepExp >= 0) {
-                // Removing old save version (only from collabora)
-                if (++countExp > keepExp) {
-                    if (logger.isDebugEnabled()) {
-                        logger.debug("v." + version.getVersionLabel() + " - remove explicit");
+                Boolean autosave = (Boolean) loolautosave;
+                if (autosave && keepAuto >= 0) {
+                    // Removing old auto-save version
+                    if (++countAuto > keepAuto) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("v." + version.getVersionLabel() + " - remove auto");
+                        }
+
+                        versionService.deleteVersion(nodeRef, version);
                     }
+                }
 
-                    versionService.deleteVersion(nodeRef, version);
+                if (!autosave && keepExp >= 0) {
+                    // Removing old save version (only from collabora)
+                    if (++countExp > keepExp) {
+                        if (logger.isDebugEnabled()) {
+                            logger.debug("v." + version.getVersionLabel() + " - remove explicit");
+                        }
+
+                        versionService.deleteVersion(nodeRef, version);
+                    }
                 }
             }
+
+            model.put("success", "true");
+        } catch (Exception e) {
+            logger.error("CleanVersionWebScript Error ", e);
+            model.put("success", "false");
         }
-
-        model.put("success", "true");
         return model;
 
     }
 
-    public void setServiceRegistry(ServiceRegistry serviceRegistry) {
-        this.serviceRegistry = serviceRegistry;
+    public void setVersionService(VersionService versionService) {
+        this.versionService = versionService;
     }
 
 }

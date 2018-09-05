@@ -5,6 +5,7 @@ import java.util.Map;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptException;
+import org.springframework.extensions.webscripts.WebScriptRequest;
 
 public class WebscriptHelper {
     private WebscriptHelper() {
@@ -49,7 +50,31 @@ public class WebscriptHelper {
      * @throws WebScriptException
      */
     static public Integer intergerValue(Map<String, String> templateArgs, String header) throws WebScriptException {
-        final String strVal = templateArgs.get(header);
+        return intergerValue(templateArgs.get(header), header);
+    }
+
+    /**
+     * Get parameter as Interger (Not Mandatory)
+     * 
+     * @param req
+     * @param header
+     * @return
+     * @throws WebScriptException
+     */
+    static public Integer intergerValue(WebScriptRequest req, String header) throws WebScriptException {
+        return intergerValue(req.getParameter(header), header);
+    }
+
+    /**
+     * Get parameter as Interger (Not Mandatory)
+     * 
+     * @param strVal
+     * @param header
+     *            Need only for log
+     * @return
+     * @throws WebScriptException
+     */
+    static public Integer intergerValue(String strVal, String header) throws WebScriptException {
         if (strVal == null) {
             return null;
         }

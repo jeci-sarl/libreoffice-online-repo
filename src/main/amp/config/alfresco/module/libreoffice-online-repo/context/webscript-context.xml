@@ -50,8 +50,8 @@
 		<property name="loolServiceUrl" value="${lool.wopi.alfresco.host}"/>
 	</bean>
 
-	<bean id="webscript.fr.arawa.lool.clean-auto-version.get" class="fr.arawa.lool.alfresco.CleanVersionWebScript"
+	<bean id="webscript.fr.arawa.lool.aspect-collabora-online.clean-auto-version.post" class="fr.arawa.lool.alfresco.CleanVersionWebScript"
 		  parent="webscript">
-		<property name="serviceRegistry" ref="ServiceRegistry"/>
+        <property name="versionService" ref="versionService" />
 	</bean>
 </beans>
