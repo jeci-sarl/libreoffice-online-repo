@@ -82,6 +82,7 @@
             <groupId>org.springframework.social</groupId>
             <artifactId>spring-social-facebook</artifactId>
             <version>1.0.3.RELEASE</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- If we are running tests then make the H2 Scripts available
