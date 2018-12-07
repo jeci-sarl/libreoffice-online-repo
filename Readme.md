@@ -1,6 +1,11 @@
 LibreOffice Edit Online Alfresco Repository AMP module (V1)
 ========
 
+This is a fork of  [LibreOffice Edit Online Alfresco](https://github.com/magenta-aps/alfresco-repo-libreoffice-online-module) 
+ade by Magenta. We add some functionatities for our customer 
+
+---
+
 This is an Alfresco Repository AMP module that adds WOPI host capabilities to Alfresco.<br/>
 It does not implement the full WOPI protocol, merely the following endpoint interfaces:
 - [ ] CheckFileInfo
