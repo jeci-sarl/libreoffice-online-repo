@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>fr.arawa.lool.alfresco</groupId>
     <artifactId>libreoffice-online-repo</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0-5.1.g</version>
     <name>libreoffice-online-repo Repository AMP project</name>
     <packaging>amp</packaging>
     <description>Manages the lifecycle of the libreoffice-online-repo Repository AMP (Alfresco Module Package)</description>
@@ -15,7 +15,7 @@
         <version>2.1.1</version>
     </parent>
 
-    <!-- 
+    <!--
         SDK properties have sensible defaults in the SDK parent,
         but you can override the properties below to use another version.
         For more available properties see the alfresco-sdk-parent POM.
@@ -34,7 +34,7 @@
              for embedded run, defaults to the 'local' environment. See SDK Parent POM for more info.
         <env>local</env>
         -->
-        <alfresco.version>5.0.d</alfresco.version>
+        <alfresco.version>5.1.g</alfresco.version>
         <alfresco.groupId>org.alfresco</alfresco.groupId>
         <alfresco.client.war>alfresco</alfresco.client.war>
         <alfresco.client.contextPath>/alfresco</alfresco.client.contextPath>
@@ -42,7 +42,7 @@
         <alfresco.client.war.folder>${project.build.directory}/${project.build.finalName}-war</alfresco.client.war.folder>
     </properties>
 
-    <!-- Here we realize the connection with the Alfresco selected platform 
+    <!-- Here we realize the connection with the Alfresco selected platform
         (e.g.version and edition) -->
     <dependencyManagement>
         <dependencies>
@@ -76,7 +76,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        
+
         <dependency>
             <!-- Dependency not found with Alfresco 5.0.d -->
             <groupId>org.springframework.social</groupId>
