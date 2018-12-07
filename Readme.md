@@ -4,11 +4,11 @@ LibreOffice Edit Online Alfresco Repository AMP module (V1)
 This is an Alfresco Repository AMP module that adds WOPI host capabilities to Alfresco.<br/>
 It does not implement the full WOPI protocol, merely the following endpoint interfaces:
 - [ ] CheckFileInfo
-- [ ] GetFile and 
+- [ ] GetFile and
 - [ ] PutFile
 
-This module was developed against Alfresco version 5.0.d.       
-        
+This module was developed against Alfresco version 5.2.g.
+
 ### Webapplication Open Platform Interface protocols
 For information on WOPI, see http://wopi.readthedocs.io/projects/wopirest/en/latest/endpoints.html for the list of WOPI endpoints.
 
@@ -35,7 +35,7 @@ Submit pull a pull request. You're also welcome to fork the code for your own pu
 ### License
 
 This code is released and distributed under the Mozilla Public License 2.0:
-- [ ] https://opensource.org/licenses/MPL-2.0 
+- [ ] https://opensource.org/licenses/MPL-2.0
 - [ ] https://tldrlegal.com/license/mozilla-public-license-2.0-%28mpl-2%29
 
 ### Reporting problems
@@ -43,7 +43,7 @@ This code is released and distributed under the Mozilla Public License 2.0:
 Every self-respecting developer should have read link on how to ask smart questions: http://www.catb.org/~esr/faqs/smart-questions.html.
 
 After you've done that you can create issues in https://github.com/magenta-aps/libreoffice-online-repo/issues.
-      
+
 ### Features to consider
 
 - [ ] Register edit action in audit log.
