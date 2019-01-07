@@ -1,5 +1,8 @@
 package dk.magenta.libreoffice.online.service;
 
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import java.io.Serializable;
 import java.util.Date;
 
 /**
@@ -7,7 +10,10 @@ import java.util.Date;
  *
  * Created by seth on 30/04/16.
  */
-public class WOPIAccessTokenInfo {
+public class WOPIAccessTokenInfo implements Serializable {
+
+    private static final long serialVersionUID = 8344283129580208330L;
+
     private String accessToken;
     private Date issuedAt;
     private Date expiresAt;
@@ -79,5 +85,16 @@ public class WOPIAccessTokenInfo {
 
     public void setAccessToken(String accessToken) {
         this.accessToken = accessToken;
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+            .append("accessToken", accessToken)
+            .append("issuedAt", issuedAt)
+            .append("expiresAt", expiresAt)
+            .append("fileId", fileId)
+            .append("userName", userName)
+            .toString();
     }
 }
