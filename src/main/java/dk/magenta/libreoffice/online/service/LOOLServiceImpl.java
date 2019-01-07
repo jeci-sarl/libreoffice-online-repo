@@ -133,7 +133,9 @@ public class LOOLServiceImpl implements LOOLService {
         // put the tokenInfoMap back to the shared cache, so other servers can see changes
         fileIdAccessTokenMap.put(fileId, tokenInfoMap);
 
-        logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
+        if (logger.isDebugEnabled()) {
+            logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
+        }
         return tokenInfo;
     }
 
@@ -197,7 +199,11 @@ public class LOOLServiceImpl implements LOOLService {
     @Override
     public NodeRef checkAccessToken(WebScriptRequest req) throws WebScriptException {
         final String fileId = req.getServiceMatch().getTemplateVars().get(WOPITokenService.FILE_ID);
-        logger.debug("Check Access Token for: " + fileId);
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("Check Access Token for: " + fileId);
+        }
+        
         if (fileId == null) {
             throw new WebScriptException("No 'fileId' parameter supplied");
         }
