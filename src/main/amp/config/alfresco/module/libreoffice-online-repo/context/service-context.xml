@@ -18,10 +18,23 @@
 -->
 <beans>
 
+    <!-- Shared Cache for fileIdAccessTokenMap -->
+    <bean name="lool-fileIdAccessTokenMapSharedCache" factory-bean="cacheFactory" factory-method="createCache">
+        <constructor-arg value="lool.cache.fileIdAccessTokenMapSharedCache"/>
+    </bean>
+    <bean name="lool-fileIdAccessTokenMapCache" class="org.alfresco.repo.cache.TransactionalCache">
+        <property name="sharedCache" ref="lool-fileIdAccessTokenMapSharedCache"/>
+        <property name="name" value="lool-fileIdAccessTokenMapCache"/>
+        <property name="maxCacheSize" value="${lool.cache.fileIdAccessTokenMapSharedCache.tx.maxItems}"/>
+        <property name="cacheStats" ref="cacheStatistics"/>
+        <property name="cacheStatsEnabled" value="${lool.cache.fileIdAccessTokenMapSharedCache.tx.statsEnabled}"/>
+    </bean>
+
     <!-- A simple class that is initialized by Spring -->
     <!--Note that the discovery url is added here for some flexibility-->
     <bean id="LOOLService"
           class="dk.magenta.libreoffice.online.service.LOOLServiceImpl" init-method="init">
+        <property name="fileIdAccessTokenMap" ref="lool-fileIdAccessTokenMapSharedCache"/>
         <property name="wopiBaseURL" value="${lool.wopi.url}"/>
         <property name="wopiDiscoveryURL" value="${lool.wopi.url.discovery}"/>
         <property name="alfExternalHost" value="${lool.wopi.alfresco.host}"/>
