@@ -55,9 +55,10 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private RetryingTransactionHelper retryingTransactionHelper;
 
     public static final String LOOL_AUTOSAVE = "lool:autosave";
+    public static final String AUTOSAVE_DESCRIPTION = "Edit with Collabora";
 
     @Override
-    public void execute(final WebScriptRequest req, WebScriptResponse res) throws IOException {
+    public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
 
         final String wopiOverrideHeader = req.getHeader(X_WOPI_OVERRIDE);
 
@@ -88,34 +89,8 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             }
 
             if (tokenInfo != null) {
-                // https://community.alfresco.com/message/809749-re-why-is-the-modifier-of-a-content-a-random-user-from-the-list-of-logged-in-users?commentID=809749&et=watches.email.thread#comment-809749
-                retryingTransactionHelper
-                        .doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-                            @Override
-                            public Void execute() throws Throwable {
-                                try {
-                                    AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
-                                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT,
-                                            true);
-                                    writer.putContent(req.getContent().getInputStream());
-                                    writer.guessMimetype(
-                                            (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-                                    writer.guessEncoding();
 
-                                    Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
-                                    versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
-                                    if (isAutosave) {
-                                        versionProperties.put(VersionModel.PROP_DESCRIPTION, "Edit with Collabora");
-                                    }
-                                    versionProperties.put(LOOL_AUTOSAVE, isAutosave);
-                                    versionService.createVersion(nodeRef, versionProperties);
-
-                                } finally {
-                                    AuthenticationUtil.clearCurrentSecurityContext();
-                                }
-                                return null;
-                            }
-                        }, false, true);
+                    writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
             }
 
             if (logger.isInfoEnabled()) {
@@ -138,6 +113,44 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
         }
     }
 
+    /**
+     * Write content file to disk on set version properties.
+     * https://community.alfresco.com/message/809749-re-why-is-the-modifier-of-a-content-a-random-user-from-the-list-of-logged-in-users?commentID=809749&et=watches.email.thread#comment-809749
+     * 
+     * @param req
+     * @param isAutosave
+     *            id true, set PROP_DESCRIPTION, "Edit with Collabora"
+     * @param tokenInfo
+     * @param nodeRef
+     */
+    private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
+            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) {
+
+        retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+            @Override
+            public Void execute() throws Throwable {
+                try {
+                    AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
+                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
+                    writer.putContent(req.getContent().getInputStream());
+                    writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+                    writer.guessEncoding();
+
+                    Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
+                    versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                    if (isAutosave) {
+                        versionProperties.put(VersionModel.PROP_DESCRIPTION, AUTOSAVE_DESCRIPTION);
+                    }
+                    versionProperties.put(LOOL_AUTOSAVE, isAutosave);
+                    versionService.createVersion(nodeRef, versionProperties);
+
+                } finally {
+                    AuthenticationUtil.clearCurrentSecurityContext();
+                }
+                return null;
+            }
+        }, false, true);
+    }
     public void setWopiTokenService(WOPITokenService wopiTokenService) {
         this.wopiTokenService = wopiTokenService;
     }
