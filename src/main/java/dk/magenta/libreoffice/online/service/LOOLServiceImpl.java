@@ -3,6 +3,7 @@ package dk.magenta.libreoffice.online.service;
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.admin.SysAdminParams;
+import org.alfresco.repo.cache.SimpleCache;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.NodeRef;
@@ -60,10 +61,19 @@ public class LOOLServiceImpl implements LOOLService {
      * is mapped to a user, so in essence a user may only have one token info per
      * file. <FileId, <userName, tokenInfo> >
      * <p>
-     * { fileId: { <== The id of the nodeRef that refers to the file userName:
-     * WOPIAccessTokenInfo } }
+     * { fileId: { <== The id of the nodeRef that refers to the file userName: WOPIAccessTokenInfo } }
+     *
+     *
+     * fileIdAccessTokenMap is an Hazelcast IMap
+     * see: https://docs.hazelcast.org/docs/2.4/javadoc/com/hazelcast/core/IMap.html
+     * The get(Object key) method returns a clone of original value, modifying the returned value does not change
+     * the actual value in the map. One should put modified value back to make changes visible to all nodes.
      */
-    private Map<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap = new HashMap<>();
+    private SimpleCache<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap;
+
+    public void setFileIdAccessTokenMap(SimpleCache<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap) {
+        this.fileIdAccessTokenMap = fileIdAccessTokenMap;
+    }
 
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
@@ -96,7 +106,7 @@ public class LOOLServiceImpl implements LOOLService {
         final String userName = AuthenticationUtil.getRunAsUser();
         final Date now = new Date();
         final Date newExpiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
-        final Map<String, WOPIAccessTokenInfo> tokenInfoMap = fileIdAccessTokenMap.get(fileId);
+        Map<String, WOPIAccessTokenInfo> tokenInfoMap = fileIdAccessTokenMap.get(fileId);
 
         WOPIAccessTokenInfo tokenInfo = null;
         if (tokenInfoMap != null) {
@@ -114,10 +124,17 @@ public class LOOLServiceImpl implements LOOLService {
         }
         if (tokenInfo == null) {
             tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt, fileId, userName);
-            if (fileIdAccessTokenMap.get(fileId) == null) {
-                fileIdAccessTokenMap.put(fileId, new HashMap<String, WOPIAccessTokenInfo>());
+            if(tokenInfoMap == null) {
+                tokenInfoMap = new HashMap<>();
             }
-            fileIdAccessTokenMap.get(fileId).put(userName, tokenInfo);
+            tokenInfoMap.put(userName, tokenInfo);
+        }
+
+        // put the tokenInfoMap back to the shared cache, so other servers can see changes
+        fileIdAccessTokenMap.put(fileId, tokenInfoMap);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
         }
         return tokenInfo;
     }
@@ -182,6 +199,11 @@ public class LOOLServiceImpl implements LOOLService {
     @Override
     public NodeRef checkAccessToken(WebScriptRequest req) throws WebScriptException {
         final String fileId = req.getServiceMatch().getTemplateVars().get(WOPITokenService.FILE_ID);
+        
+        if (logger.isDebugEnabled()) {
+            logger.debug("Check Access Token for: " + fileId);
+        }
+        
         if (fileId == null) {
             throw new WebScriptException("No 'fileId' parameter supplied");
         }
