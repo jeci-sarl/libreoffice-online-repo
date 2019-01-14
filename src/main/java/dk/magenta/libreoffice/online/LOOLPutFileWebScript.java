@@ -18,6 +18,12 @@ package dk.magenta.libreoffice.online;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -46,6 +52,7 @@ import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 import dk.magenta.libreoffice.online.service.WOPITokenService;
 
 public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConstant {
+
     private static final Log logger = LogFactory.getLog(LOOLPutFileWebScript.class);
 
     private WOPITokenService wopiTokenService;
@@ -56,6 +63,8 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
     public static final String LOOL_AUTOSAVE = "lool:autosave";
     public static final String AUTOSAVE_DESCRIPTION = "Edit with Collabora";
+
+    private DateTimeFormatter iso8601formater = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC);
 
     @Override
     public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
@@ -90,7 +99,13 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
             if (tokenInfo != null) {
 
+                boolean success = checkTimestamp(req, res, nodeRef);
+
+                if (success) {
                     writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
+                    responseNewModifiedTime(res, nodeRef);
+                }
+
             }
 
             if (logger.isInfoEnabled()) {
@@ -151,6 +166,80 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             }
         }, false, true);
     }
+
+    /**
+     * Return New PROP_MODIFIED to lool
+     * 
+     * @param res
+     * @param nodeRef
+     */
+    private void responseNewModifiedTime(final WebScriptResponse res, final NodeRef nodeRef) {
+        retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+            @Override
+            public Void execute() throws Throwable {
+
+                Date newModified = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+                final String dte = iso8601formater.format(Instant.ofEpochMilli(newModified.getTime()));
+
+                jsonResponse(res, 200, "{ \"LastModifiedTime\": \"" + dte + "\" }");
+
+                return null;
+            }
+        }, true, true);
+    }
+
+    /**
+     * Check if X-LOOL-WOPI-Timestamp is equal to PROP_MODIFIED
+     * 
+     * @param req
+     * @param res
+     * @param nodeRef
+     * @return false if error, and write response output with code 409
+     * @throws IOException
+     */
+    private boolean checkTimestamp(final WebScriptRequest req, final WebScriptResponse res, final NodeRef nodeRef)
+            throws IOException {
+
+        final String hdrTimestamp = req.getHeader(X_LOOL_WOPI_TIMESTAMP);
+        if (hdrTimestamp == null) {
+            // Ignore if no X-LOOL-WOPI-Timestamp
+            return true;
+        }
+        LocalDate loolTimestamp = null;
+        try {
+            loolTimestamp = LocalDate.from(iso8601formater.parse(hdrTimestamp));
+        } catch (DateTimeException e) {
+            logger.error("checkTimestamp Error : " + e.getMessage());
+        }
+
+        if (loolTimestamp == null) {
+            jsonResponse(res, 409, "{ \"LOOLStatusCode\": 1010 }");
+            return false;
+        }
+
+        // Check X_LOOL_WOPI_TIMESTAMP header
+        final Date modified = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+        final LocalDate localDate = ((Date) modified).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
+        if (loolTimestamp.compareTo(localDate) != 0) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("PROP_MODIFIED : " + modified);
+                logger.debug(X_LOOL_WOPI_TIMESTAMP + " : " + hdrTimestamp);
+            }
+            logger.error("checkTimestamp Error : " + X_LOOL_WOPI_TIMESTAMP + " is different than PROP_MODIFIED");
+            jsonResponse(res, 409, "{ \"LOOLStatusCode\": 1010 }");
+            return false;
+        }
+
+        return true;
+    }
+
+    private void jsonResponse(final WebScriptResponse res, int code, String response) throws IOException {
+        res.reset();
+        res.setStatus(code);
+        res.setContentType("application/json;charset=UTF-8");
+        res.getWriter().append(response);
+    }
+
     public void setWopiTokenService(WOPITokenService wopiTokenService) {
         this.wopiTokenService = wopiTokenService;
     }

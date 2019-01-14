@@ -2,8 +2,9 @@ package dk.magenta.libreoffice.online;
 
 public interface WOPIConstant {
      String X_LOOL_WOPI_IS_AUTOSAVE = "X-LOOL-WOPI-IsAutosave";
+     String X_LOOL_WOPI_TIMESTAMP = "X-LOOL-WOPI-Timestamp";
      String X_WOPI_OVERRIDE = "X-WOPI-Override";
-
+;
     String ENABLE_OWNER_TERMINATION = "EnableOwnerTermination";
     String POST_MESSAGE_ORIGIN = "PostMessageOrigin";
     String VERSION = "Version";
