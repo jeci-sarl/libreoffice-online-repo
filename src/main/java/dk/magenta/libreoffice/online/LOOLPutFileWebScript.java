@@ -89,23 +89,24 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
         try {
             final WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
+            if (tokenInfo == null) {
+                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "No tokens found for this file id.");
+            }
+
             // Verifying that the user actually exists
             final PersonInfo person = wopiTokenService.getUserInfoOfToken(tokenInfo);
-            final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
             if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != tokenInfo.getUserName()) {
                 throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
                         "The user no longer appears to exist.");
             }
 
-            if (tokenInfo != null) {
+            final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
 
-                boolean success = checkTimestamp(req, res, nodeRef);
+            boolean success = checkTimestamp(req, res, nodeRef);
 
-                if (success) {
-                    writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
-                    responseNewModifiedTime(res, nodeRef);
-                }
-
+            if (success) {
+                writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
+                responseNewModifiedTime(res, nodeRef);
             }
 
             if (logger.isInfoEnabled()) {
