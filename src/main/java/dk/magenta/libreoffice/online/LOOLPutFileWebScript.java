@@ -28,9 +28,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.alfresco.model.ContentModel;
+import org.alfresco.repo.content.LimitedStreamCopier;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.version.VersionModel;
+import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
@@ -138,19 +140,31 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
      *            id true, set PROP_DESCRIPTION, "Edit with Collabora"
      * @param tokenInfo
      * @param nodeRef
+     * @throws IOException
+     * @throws ContentIOException
      */
     private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
-            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) {
+            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) throws ContentIOException, IOException {
+
+        final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
+        writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+        writer.guessEncoding();
+
+        LimitedStreamCopier copier = new LimitedStreamCopier();
+        long size = copier.copyStreamsLong(req.getContent().getInputStream(), writer.getContentOutputStream(), -1);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Write  " + size + " to disk");
+        }
 
         retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
             @Override
             public Void execute() throws Throwable {
                 try {
                     AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
-                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
-                    writer.putContent(req.getContent().getInputStream());
-                    writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-                    writer.guessEncoding();
+
+                    ContentData contentData = writer.getContentData();
+                    nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
 
                     Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
                     versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
