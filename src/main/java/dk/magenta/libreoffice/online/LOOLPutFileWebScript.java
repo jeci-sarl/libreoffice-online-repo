@@ -18,7 +18,6 @@ package dk.magenta.libreoffice.online;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Serializable;
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -30,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.alfresco.model.ContentModel;
-import org.alfresco.repo.content.LimitedStreamCopier;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
@@ -39,6 +37,7 @@ import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
+import org.alfresco.service.cmr.repository.MimetypeService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
@@ -65,6 +64,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private ContentService contentService;
     private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
+    private MimetypeService mimetypeService;
 
     public static final String LOOL_AUTOSAVE = "lool:autosave";
     public static final String AUTOSAVE_DESCRIPTION = "Edit with Collabora";
@@ -154,16 +154,16 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             public ContentWriter doWork() throws Exception {
                 final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
 
-                final LimitedStreamCopier copier = new LimitedStreamCopier();
                 final InputStream inputStream = req.getContent().getInputStream();
-                final OutputStream contentOutputStream = writer.getContentOutputStream();
-                long size = copier.copyStreamsLong(inputStream, contentOutputStream, -1);
+                writer.putContent(inputStream);
 
-                if (logger.isDebugEnabled()) {
-                    logger.debug("Write  " + size + " to contentStore");
+                final String name = (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME);
+                if (logger.isInfoEnabled()) {
+                    logger.info("Filename upload " + name);
                 }
 
-                writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+                String  mimetype = mimetypeService.guessMimetype(name, writer.getReader());
+                writer.setMimetype(mimetype);
                 writer.guessEncoding();
 
                 return writer;
@@ -290,5 +290,9 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
     public void setRetryingTransactionHelper(RetryingTransactionHelper retryingTransactionHelper) {
         this.retryingTransactionHelper = retryingTransactionHelper;
+    }
+    
+    public void setMimetypeService(MimetypeService mimetypeService) {
+        this.mimetypeService = mimetypeService;
     }
 }
