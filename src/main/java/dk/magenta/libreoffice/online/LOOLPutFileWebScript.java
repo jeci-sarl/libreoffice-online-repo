@@ -17,6 +17,7 @@ limitations under the License.
 package dk.magenta.libreoffice.online;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Serializable;
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -29,11 +30,14 @@ import java.util.Map;
 
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.version.VersionModel;
+import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
+import org.alfresco.service.cmr.repository.MimetypeService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
@@ -60,6 +64,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private ContentService contentService;
     private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
+    private MimetypeService mimetypeService;
 
     public static final String LOOL_AUTOSAVE = "lool:autosave";
     public static final String AUTOSAVE_DESCRIPTION = "Edit with Collabora";
@@ -89,23 +94,24 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
         try {
             final WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
+            if (tokenInfo == null) {
+                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "No tokens found for this file id.");
+            }
+
             // Verifying that the user actually exists
             final PersonInfo person = wopiTokenService.getUserInfoOfToken(tokenInfo);
-            final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
             if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != tokenInfo.getUserName()) {
                 throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
                         "The user no longer appears to exist.");
             }
 
-            if (tokenInfo != null) {
+            final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
 
-                boolean success = checkTimestamp(req, res, nodeRef);
+            boolean success = checkTimestamp(req, res, nodeRef);
 
-                if (success) {
-                    writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
-                    responseNewModifiedTime(res, nodeRef);
-                }
-
+            if (success) {
+                writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
+                responseNewModifiedTime(res, nodeRef);
             }
 
             if (logger.isInfoEnabled()) {
@@ -137,19 +143,45 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
      *            id true, set PROP_DESCRIPTION, "Edit with Collabora"
      * @param tokenInfo
      * @param nodeRef
+     * @throws IOException
+     * @throws ContentIOException
      */
     private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
-            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) {
+            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) throws ContentIOException, IOException {
 
+        /* First write content from HTTP stream to the content store. */
+        final ContentWriter writer = AuthenticationUtil.runAs(new RunAsWork<ContentWriter>() {
+            public ContentWriter doWork() throws Exception {
+                final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
+
+                final InputStream inputStream = req.getContent().getInputStream();
+                writer.putContent(inputStream);
+
+                final String name = (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME);
+                if (logger.isInfoEnabled()) {
+                    logger.info("Filename upload " + name);
+                }
+
+                String  mimetype = mimetypeService.guessMimetype(name, writer.getReader());
+                writer.setMimetype(mimetype);
+                writer.guessEncoding();
+
+                return writer;
+            }
+        }, tokenInfo.getUserName());
+
+        /*
+         * Then attach the content to the noderef. This prevent the
+         * RetryingTransactionHelper mecanisme to store empty content.
+         */
         retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
             @Override
             public Void execute() throws Throwable {
                 try {
                     AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
-                    ContentWriter writer = contentService.getWriter(nodeRef, ContentModel.PROP_CONTENT, true);
-                    writer.putContent(req.getContent().getInputStream());
-                    writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-                    writer.guessEncoding();
+
+                    ContentData contentData = writer.getContentData();
+                    nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
 
                     Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
                     versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
@@ -258,5 +290,9 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
     public void setRetryingTransactionHelper(RetryingTransactionHelper retryingTransactionHelper) {
         this.retryingTransactionHelper = retryingTransactionHelper;
+    }
+    
+    public void setMimetypeService(MimetypeService mimetypeService) {
+        this.mimetypeService = mimetypeService;
     }
 }
