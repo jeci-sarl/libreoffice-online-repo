@@ -17,6 +17,8 @@ limitations under the License.
 package dk.magenta.libreoffice.online;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.time.DateTimeException;
 import java.time.Instant;
@@ -30,6 +32,7 @@ import java.util.Map;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.content.LimitedStreamCopier;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
+import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.cmr.repository.ContentData;
@@ -146,17 +149,29 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
             final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) throws ContentIOException, IOException {
 
-        final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
-        writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-        writer.guessEncoding();
+        /* First write content from HTTP stream to the content store. */
+        final ContentWriter writer = AuthenticationUtil.runAs(new RunAsWork<ContentWriter>() {
+            public ContentWriter doWork() throws Exception {
+                final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
+                writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+                writer.guessEncoding();
 
-        LimitedStreamCopier copier = new LimitedStreamCopier();
-        long size = copier.copyStreamsLong(req.getContent().getInputStream(), writer.getContentOutputStream(), -1);
+                final LimitedStreamCopier copier = new LimitedStreamCopier();
+                final InputStream inputStream = req.getContent().getInputStream();
+                final OutputStream contentOutputStream = writer.getContentOutputStream();
+                long size = copier.copyStreamsLong(inputStream, contentOutputStream, -1);
 
-        if (logger.isDebugEnabled()) {
-            logger.debug("Write  " + size + " to disk");
-        }
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Write  " + size + " to contentStore");
+                }
+                return writer;
+            }
+        }, tokenInfo.getUserName());
 
+        /*
+         * Then attach the content to the noderef. This prevent the
+         * RetryingTransactionHelper mecanisme to store empty content.
+         */
         retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
             @Override
             public Void execute() throws Throwable {
