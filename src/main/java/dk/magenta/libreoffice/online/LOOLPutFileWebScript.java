@@ -153,8 +153,6 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
         final ContentWriter writer = AuthenticationUtil.runAs(new RunAsWork<ContentWriter>() {
             public ContentWriter doWork() throws Exception {
                 final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
-                writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
-                writer.guessEncoding();
 
                 final LimitedStreamCopier copier = new LimitedStreamCopier();
                 final InputStream inputStream = req.getContent().getInputStream();
@@ -164,6 +162,10 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
                 if (logger.isDebugEnabled()) {
                     logger.debug("Write  " + size + " to contentStore");
                 }
+
+                writer.guessMimetype((String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+                writer.guessEncoding();
+
                 return writer;
             }
         }, tokenInfo.getUserName());
