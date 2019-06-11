@@ -12,11 +12,12 @@ import java.net.URL;
  */
 public interface LOOLService {
     /**
-     * Generate and store an access token only valid for the current
-     * user/file id combination.
+     * Generate and store an access token only valid for the current user/file id
+     * combination.
      *
-     * If an existing access token exists for the user/file id combination,
-     * then extend its expiration date and return it.
+     * If an existing access token exists for the user/file id combination, then
+     * extend its expiration date and return it.
+     * 
      * @param fileId
      * @return
      */
@@ -24,13 +25,14 @@ public interface LOOLService {
 
     /**
      * Generates a random access token.
+     * 
      * @return
      */
     String generateAccessToken();
 
     /**
-     * Return stored info about the given token if it exists. Otherwise,
-     * return null.
+     * Return stored info about the given token if it exists. Otherwise, return
+     * null.
      *
      * @param accessToken
      * @param fileId
@@ -62,31 +64,35 @@ public interface LOOLService {
 
     /**
      * Returns the id component of a NodeRef
+     * 
      * @param nodeRef
      * @return
      */
     String getFileIdForNodeRef(NodeRef nodeRef);
 
     /**
-     * Returns a NodeRef given a file Id.
-     * Note:
-     * Checks to see if the node exists aren't performed
+     * Returns a NodeRef given a file Id. Note: Checks to see if the node exists
+     * aren't performed
+     * 
      * @param fileId
      * @return
      */
     NodeRef getNodeRefForFileId(String fileId);
 
     /**
-     * In the case that Alfresco is behind a proxy and not using the proxy hostname in the alfresco config section of
-     * the alfresco-global.properties file, then we should be able to set a property in alfresco-global.properties for
-     * this service to use.
+     * In the case that Alfresco is behind a proxy and not using the proxy hostname
+     * in the alfresco config section of the alfresco-global.properties file, then
+     * we should be able to set a property in alfresco-global.properties for this
+     * service to use.
+     * 
      * @return
      */
     String getAlfrescoProxyDomain();
 
     /**
      * PostMessageOrigin need full URI.
+     * 
      * @return
      */
-	URL getAlfExternalHost();
+    URL getAlfExternalHost();
 }

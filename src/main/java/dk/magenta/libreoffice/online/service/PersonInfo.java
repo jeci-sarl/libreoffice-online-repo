@@ -4,7 +4,8 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.security.PersonService;
 
 /**
- * Wrapper around the org.alfresco.service.cmr.security.PersonService.PersonInfo class
+ * Wrapper around the org.alfresco.service.cmr.security.PersonService.PersonInfo
+ * class
  *
  * @author DarkStar1.
  */
@@ -14,12 +15,6 @@ public class PersonInfo {
     private final String firstName;
     private final String lastName;
 
-    private PersonService personService;
-
-    public void setPersonService(PersonService personService) {
-        this.personService = personService;
-    }
-
     public PersonInfo(NodeRef nodeRef, String userName, String firstName, String lastName) {
         this.nodeRef = nodeRef;
         this.userName = userName;
@@ -27,7 +22,7 @@ public class PersonInfo {
         this.lastName = lastName;
     }
 
-    public PersonInfo(PersonService.PersonInfo personInfo){
+    public PersonInfo(PersonService.PersonInfo personInfo) {
         this.nodeRef = personInfo.getNodeRef();
         this.userName = personInfo.getUserName();
         this.firstName = personInfo.getFirstName();

@@ -2,3 +2,6 @@
 .idea
 alf_data_dev
 target
+.classpath
+.project
+.settings

@@ -2,9 +2,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>dk.magenta</groupId>
+    <groupId>fr.arawa.lool.alfresco</groupId>
     <artifactId>libreoffice-online-repo</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.2.2-5.1.g</version>
     <name>libreoffice-online-repo Repository AMP project</name>
     <packaging>amp</packaging>
     <description>Manages the lifecycle of the libreoffice-online-repo Repository AMP (Alfresco Module Package)</description>
@@ -12,10 +12,10 @@
     <parent>
         <groupId>org.alfresco.maven</groupId>
         <artifactId>alfresco-sdk-parent</artifactId>
-        <version>2.1.0</version>
+        <version>2.1.1</version>
     </parent>
 
-    <!-- 
+    <!--
         SDK properties have sensible defaults in the SDK parent,
         but you can override the properties below to use another version.
         For more available properties see the alfresco-sdk-parent POM.
@@ -34,7 +34,7 @@
              for embedded run, defaults to the 'local' environment. See SDK Parent POM for more info.
         <env>local</env>
         -->
-        <alfresco.version>5.0.d</alfresco.version>
+        <alfresco.version>5.1.g</alfresco.version>
         <alfresco.groupId>org.alfresco</alfresco.groupId>
         <alfresco.client.war>alfresco</alfresco.client.war>
         <alfresco.client.contextPath>/alfresco</alfresco.client.contextPath>
@@ -42,7 +42,7 @@
         <alfresco.client.war.folder>${project.build.directory}/${project.build.finalName}-war</alfresco.client.war.folder>
     </properties>
 
-    <!-- Here we realize the connection with the Alfresco selected platform 
+    <!-- Here we realize the connection with the Alfresco selected platform
         (e.g.version and edition) -->
     <dependencyManagement>
         <dependencies>
@@ -68,6 +68,21 @@
         <dependency>
             <groupId>${alfresco.groupId}</groupId>
             <artifactId>alfresco-repository</artifactId>
+            <exclusions>
+                <exclusion>
+                    <!-- Dependency not found with Alfresco 5.0.d -->
+                    <groupId>org.springframework.social</groupId>
+                    <artifactId>spring-social-facebook</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <!-- Dependency not found with Alfresco 5.0.d -->
+            <groupId>org.springframework.social</groupId>
+            <artifactId>spring-social-facebook</artifactId>
+            <version>1.0.3.RELEASE</version>
+            <scope>provided</scope>
         </dependency>
 
         <!-- If we are running tests then make the H2 Scripts available
@@ -84,6 +99,11 @@
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>de.jgoldhammer</groupId>
+            <artifactId>alfresco-jscript-extension</artifactId>
+            <version>1.7</version>
         </dependency>
     </dependencies>
 
