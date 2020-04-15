@@ -102,14 +102,16 @@ public class LOOLServiceImpl implements LOOLService {
      * If an existing access token exists for the user/file id combination, then
      * extend its expiration date and return it.
      * 
-     * @param fileId
+     * @param nodeRef
      * @return
      */
     @Override
-    public WOPIAccessTokenInfo createAccessToken(String fileId) {
-        final String userName = AuthenticationUtil.getRunAsUser();
+    public WOPIAccessTokenInfo createAccessToken(NodeRef nodeRef) {
+
 
         final Date now = new Date();
+        final String userName = AuthenticationUtil.getRunAsUser();
+        final String fileId = getFileIdForNodeRef(nodeRef);
         Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
 
         WOPIAccessTokenInfo tokenInfo = null;

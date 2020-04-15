@@ -18,10 +18,10 @@ public interface LOOLService {
      * If an existing access token exists for the user/file id combination, then
      * extend its expiration date and return it.
      * 
-     * @param fileId
+     * @param nodeRef
      * @return
      */
-    WOPIAccessTokenInfo createAccessToken(String fileId);
+    WOPIAccessTokenInfo createAccessToken(NodeRef nodeRef);
 
     /**
      * Generates a random access token.
