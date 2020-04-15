@@ -63,14 +63,6 @@ public interface LOOLService {
     String getWopiSrcURL(NodeRef nodeRef, String action) throws IOException;
 
     /**
-     * Returns the id component of a NodeRef
-     * 
-     * @param nodeRef
-     * @return
-     */
-    String getFileIdForNodeRef(NodeRef nodeRef);
-
-    /**
      * Returns a NodeRef given a file Id. Note: Checks to see if the node exists
      * aren't performed
      * 

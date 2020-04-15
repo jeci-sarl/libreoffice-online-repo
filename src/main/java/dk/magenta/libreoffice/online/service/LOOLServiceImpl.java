@@ -111,7 +111,7 @@ public class LOOLServiceImpl implements LOOLService {
 
         final Date now = new Date();
         final String userName = AuthenticationUtil.getRunAsUser();
-        final String fileId = getFileIdForNodeRef(nodeRef);
+        final String fileId = nodeRef.getId();
         Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
 
         WOPIAccessTokenInfo tokenInfo = null;
@@ -253,17 +253,6 @@ public class LOOLServiceImpl implements LOOLService {
     public String getWopiSrcURL(NodeRef nodeRef, String action) throws IOException {
         final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
         return wopiLoader.getSrcURL(contentData.getMimetype(), action);
-    }
-
-    /**
-     * Returns the id component of a NodeRef
-     * 
-     * @param nodeRef
-     * @return
-     */
-    @Override
-    public String getFileIdForNodeRef(NodeRef nodeRef) {
-        return nodeRef.getId();
     }
 
     /**
