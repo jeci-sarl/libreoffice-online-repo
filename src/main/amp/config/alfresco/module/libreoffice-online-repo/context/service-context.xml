@@ -40,6 +40,7 @@
         <property name="alfExternalHost" value="${lool.wopi.alfresco.host}"/>
         <property name="tokenTtlMs" value="${lool.wopi.token.ttl}"/>
         <property name="nodeService" ref="NodeService"/>
+        <property name="permissionService" ref="PermissionService"/>
         <property name="sysAdminParams" ref="sysAdminParams"/>
     </bean>
 

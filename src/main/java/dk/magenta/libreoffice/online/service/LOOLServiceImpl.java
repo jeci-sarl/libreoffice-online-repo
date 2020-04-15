@@ -9,6 +9,8 @@ import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.repository.StoreRef;
+import org.alfresco.service.cmr.security.AccessStatus;
+import org.alfresco.service.cmr.security.PermissionService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -52,6 +54,7 @@ public class LOOLServiceImpl implements LOOLService {
     private URL wopiDiscoveryURL;
     private WOPILoader wopiLoader;
     private NodeService nodeService;
+    private PermissionService permissionService;
     private SysAdminParams sysAdminParams;
 
     private SecureRandom random = new SecureRandom();
@@ -77,6 +80,10 @@ public class LOOLServiceImpl implements LOOLService {
 
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
+    }
+    
+    public void setPermissionService(PermissionService permissionService) {
+        this.permissionService = permissionService;
     }
 
     public void setWopiBaseURL(URL wopiBaseURL) {
