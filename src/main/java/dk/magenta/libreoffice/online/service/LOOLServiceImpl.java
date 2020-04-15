@@ -165,8 +165,7 @@ public class LOOLServiceImpl implements LOOLService {
      * 
      * @return
      */
-    @Override
-    public String generateAccessToken() {
+    private String generateAccessToken() {
         return new BigInteger(130, random).toString(32);
     }
 

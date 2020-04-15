@@ -24,13 +24,6 @@ public interface LOOLService {
     WOPIAccessTokenInfo createAccessToken(NodeRef nodeRef);
 
     /**
-     * Generates a random access token.
-     * 
-     * @return
-     */
-    String generateAccessToken();
-
-    /**
      * Return stored info about the given token if it exists. Otherwise, return
      * null.
      *
