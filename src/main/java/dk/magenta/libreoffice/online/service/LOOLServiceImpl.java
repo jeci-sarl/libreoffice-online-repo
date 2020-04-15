@@ -41,9 +41,9 @@ public class LOOLServiceImpl implements LOOLService {
 
     private static final long ONE_HOUR_MS = 1000 * 60 * 60;
 
-    // TODO: Make configurable
-    // 24 hours in milliseconds
-    private static final long TOKEN_TTL_MS = ONE_HOUR_MS * 24;
+    private static final long DEFAULT_TOKEN_TTL_MS = ONE_HOUR_MS * 24;
+    private long tokenTtlMs = -1;
+    
     private static final int DEFAULT_WOPI_PORT = 9980;
 
     private URL wopiBaseURL;
@@ -90,6 +90,10 @@ public class LOOLServiceImpl implements LOOLService {
     public void setAlfExternalHost(URL alfExternalHost) {
         this.alfExternalHost = alfExternalHost;
     }
+    
+    public void setTokenTtlMs(long tokenTtlMs) {
+        this.tokenTtlMs = tokenTtlMs;
+    }
 
     /**
      * Generate and store an access token only valid for the current user/file id
@@ -105,7 +109,14 @@ public class LOOLServiceImpl implements LOOLService {
     public WOPIAccessTokenInfo createAccessToken(String fileId) {
         final String userName = AuthenticationUtil.getRunAsUser();
         final Date now = new Date();
-        final Date newExpiresAt = new Date(now.getTime() + TOKEN_TTL_MS);
+
+        if (this.tokenTtlMs < 1) {
+            this.tokenTtlMs = DEFAULT_TOKEN_TTL_MS;
+        } else if (this.tokenTtlMs < ONE_HOUR_MS) {
+            logger.warn("Token TTL is short : " + this.tokenTtlMs + " ms");
+        }
+        
+        final Date newExpiresAt = new Date(now.getTime() + tokenTtlMs);
         Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
 
         WOPIAccessTokenInfo tokenInfo = null;
