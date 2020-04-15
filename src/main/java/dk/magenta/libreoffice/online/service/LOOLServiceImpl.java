@@ -108,15 +108,8 @@ public class LOOLServiceImpl implements LOOLService {
     @Override
     public WOPIAccessTokenInfo createAccessToken(String fileId) {
         final String userName = AuthenticationUtil.getRunAsUser();
-        final Date now = new Date();
 
-        if (this.tokenTtlMs < 1) {
-            this.tokenTtlMs = DEFAULT_TOKEN_TTL_MS;
-        } else if (this.tokenTtlMs < ONE_HOUR_MS) {
-            logger.warn("Token TTL is short : " + this.tokenTtlMs + " ms");
-        }
-        
-        final Date newExpiresAt = new Date(now.getTime() + tokenTtlMs);
+        final Date now = new Date();
         Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
 
         WOPIAccessTokenInfo tokenInfo = null;
@@ -126,7 +119,7 @@ public class LOOLServiceImpl implements LOOLService {
                 if (tokenInfo.isValid() && tokenInfo.getFileId().equals(fileId)
                         && tokenInfo.getUserName().equals(userName)) {
                     // Renew token for a new time-to-live period.
-                    tokenInfo.setExpiresAt(newExpiresAt);
+                    tokenInfo.setExpiresAt(newExpiresAt(now));
                 } else {
                     // Expired or not valid -- remove it.
                     tokenInfoMap.remove(userName);
@@ -134,8 +127,9 @@ public class LOOLServiceImpl implements LOOLService {
             }
         }
         if (tokenInfo == null) {
-            tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt, fileId, userName);
-            if(tokenInfoMap == null) {
+
+            tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt(now), fileId, userName);
+            if (tokenInfoMap == null) {
                 tokenInfoMap = new HashMap<>();
             }
             tokenInfoMap.put(userName, tokenInfo);
@@ -148,6 +142,20 @@ public class LOOLServiceImpl implements LOOLService {
             logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
         }
         return tokenInfo;
+    }
+    
+    /**
+     * Compute token time to live
+     * 
+     * @return Now + tokenTtlMs
+     */
+    private Date newExpiresAt(final Date now) {
+        if (this.tokenTtlMs < 1) {
+            this.tokenTtlMs = DEFAULT_TOKEN_TTL_MS;
+        } else if (this.tokenTtlMs < ONE_HOUR_MS) {
+            logger.warn("Token TTL is short : " + this.tokenTtlMs + " ms");
+        }
+        return new Date(now.getTime() + tokenTtlMs);
     }
 
     /**
