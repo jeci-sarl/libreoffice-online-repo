@@ -105,42 +105,28 @@ public class LOOLServiceImpl implements LOOLService {
      * Generate and store an access token only valid for the current user/file id
      * combination.
      *
-     * If an existing access token exists for the user/file id combination, then
-     * extend its expiration date and return it.
+     * We check if we have at least READ permission, so a user must be connected.
      * 
      * @param nodeRef
      * @return
      */
     @Override
     public WOPIAccessTokenInfo createAccessToken(NodeRef nodeRef) {
-        final String userName = AuthenticationUtil.getRunAsUser();
-        final String fileId = nodeRef.getId();
-        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(fileId + userName);
-
-        if (tokenInfo != null) {
-            if (tokenInfo.getFileId().equals(fileId) && tokenInfo.getUserName().equals(userName)) {
-                // Renew token for a new time-to-live period
-                final Date now = new Date();
-                tokenInfo.setExpiresAt(newExpiresAt(now));
-            } else {
-                // Look unlikely
-                logger.warn("tokenInfo do not match expected data for " + fileId + " " + userName);
-                this.tokenMap.remove(fileId + userName);
-                tokenInfo = null;
+        if (AuthenticationUtil.isRunAsUserTheSystemUser()) {
+            logger.warn("Create token for System user, it is not desirable");
+        } else {
+            AccessStatus perm = this.permissionService.hasPermission(nodeRef, PermissionService.READ);
+            if (AccessStatus.ALLOWED != perm) {
+                throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Not allow to READ " + nodeRef);
             }
         }
 
-        AccessStatus perm = this.permissionService.hasPermission(nodeRef, PermissionService.READ);
-        if (AccessStatus.ALLOWED != perm) {
-            this.tokenMap.remove(fileId + userName);
-            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Not allow to READ " + nodeRef);
-        }
-
-        if (tokenInfo == null) {
-            final Date now = new Date();
-            tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt(now), fileId, userName);
-        }
-        this.tokenMap.put(fileId + userName, tokenInfo);
+        final String userName = AuthenticationUtil.getRunAsUser();
+        final String fileId = nodeRef.getId();
+        final Date now = new Date();
+        WOPIAccessTokenInfo tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt(now), fileId,
+                userName);
+        this.tokenMap.put(tokenInfo.getAccessToken(), tokenInfo);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
@@ -181,19 +167,18 @@ public class LOOLServiceImpl implements LOOLService {
      */
     @Override
     public WOPIAccessTokenInfo getAccessToken(String accessToken, String fileId) {
-        final String userName = AuthenticationUtil.getRunAsUser();
-        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(fileId + userName);
+        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(accessToken);
 
         if (tokenInfo == null) {
-            logger.warn("No token access found for " + fileId + userName);
+            logger.warn("No token access found for " + accessToken);
             return null;
         }
 
-        if (tokenInfo.getAccessToken().equals(accessToken)) {
+        if (tokenInfo.getFileId().equals(fileId)) {
             return tokenInfo;
-        } 
+        }
 
-        logger.warn("Tokens stored for " + fileId + userName + ", not match the given access token");
+        logger.warn("Tokens stored for " + accessToken + ", not match the given fileId" + fileId);
         return null;
     }
 
@@ -220,16 +205,18 @@ public class LOOLServiceImpl implements LOOLService {
         }
 
         final String accessToken = req.getParameter(WOPITokenService.ACCESS_TOKEN);
-        final WOPIAccessTokenInfo tokenInfo = getAccessToken(accessToken, fileId);
+        WOPIAccessTokenInfo tokenInfo = getAccessToken(accessToken, fileId);
         // Check access token
         if (accessToken == null || tokenInfo == null) {
             throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token invalid");
         }
         if (!tokenInfo.isValid()) {
-            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token expired");
+            // try to renew
+            AuthenticationUtil.setRunAsUser(tokenInfo.getUserName());
+            tokenInfo = createAccessToken(getNodeRefForFileId(fileId));
         }
 
-        AuthenticationUtil.setRunAsUser(tokenInfo.getUserName());
+        // TODO check 
         return getNodeRefForFileId(fileId);
     }
 
