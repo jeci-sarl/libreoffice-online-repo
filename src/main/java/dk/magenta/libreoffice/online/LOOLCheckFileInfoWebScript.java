@@ -44,6 +44,7 @@ import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
+import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
 public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements WOPIConstant {
     private static final Logger logger = LoggerFactory.getLogger(LOOLCheckFileInfoWebScript.class);
@@ -68,9 +69,10 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
      * @return
      */
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
+        final WOPIAccessTokenInfo wopiToken = loolService.checkAccessToken(req);
+        final NodeRef nodeRef = loolService.getNodeRefForFileId(wopiToken.getFileId());
         Map<String, Object> model = new HashMap<>();
         try {
-            final NodeRef nodeRef = loolService.checkAccessToken(req);
             final Date lastModifiedDate = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
             // Convert lastModifiedTime to ISO 8601 according to:
             // https://github.com/LibreOffice/online/blob/master/wsd/Storage.cpp#L460 or

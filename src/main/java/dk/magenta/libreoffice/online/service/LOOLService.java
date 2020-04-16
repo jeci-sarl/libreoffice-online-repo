@@ -34,16 +34,15 @@ public interface LOOLService {
     WOPIAccessTokenInfo getAccessToken(String accessToken, String fileId);
 
     /**
-     * Check the access token given in the request and return the nodeRef
-     * corresponding to the file id passed to the request.
+     * Check the access token given in the request and return the WOPIAccessTokenInfo
+     * corresponding to the token
      *
-     * Additionally, set the runAs user to the user corresponding to the token.
      *
      * @param req
      * @throws WebScriptException
      * @return
      */
-    NodeRef checkAccessToken(WebScriptRequest req) throws WebScriptException;
+    WOPIAccessTokenInfo checkAccessToken(WebScriptRequest req) throws WebScriptException;
 
     /**
      * Returns the WOPI src URL for a given nodeRef and action.

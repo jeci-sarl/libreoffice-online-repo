@@ -193,7 +193,7 @@ public class LOOLServiceImpl implements LOOLService {
      * @return
      */
     @Override
-    public NodeRef checkAccessToken(WebScriptRequest req) throws WebScriptException {
+    public WOPIAccessTokenInfo checkAccessToken(WebScriptRequest req) throws WebScriptException {
         final String fileId = req.getServiceMatch().getTemplateVars().get(WOPITokenService.FILE_ID);
         
         if (logger.isDebugEnabled()) {
@@ -216,8 +216,7 @@ public class LOOLServiceImpl implements LOOLService {
             tokenInfo = createAccessToken(getNodeRefForFileId(fileId));
         }
 
-        // TODO check 
-        return getNodeRefForFileId(fileId);
+        return tokenInfo;
     }
 
     /**
