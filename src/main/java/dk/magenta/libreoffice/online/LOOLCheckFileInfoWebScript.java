@@ -133,28 +133,6 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
         return contentData.getSize();
     }
 
-    /**
-     * Previously, it was mandatory that the SHA 256 of the file be returned as part
-     * of the WOPI protocol. It's no longer necessary but we'll leave this here just
-     * in case LOOL requires it in the future
-     * 
-     * @param nodeRef
-     * @return
-     * @throws IOException
-     */
-    protected String getSHAhash(NodeRef nodeRef) throws IOException {
-        final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
-        try {
-            final MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update(contentData.getContentUrl().getBytes());
-            byte[] aMessageDigest = md.digest();
-
-            return Base64.getEncoder().encodeToString(aMessageDigest);
-        } catch (NoSuchAlgorithmException nsae) {
-            logger.error("Unable to find encoding algorithm");
-            throw new IOException("Unable to generate a hash for the requested file", nsae);
-        }
-    }
 
     /**
      * This gets the version of a document. If the document hasn't been versioned
