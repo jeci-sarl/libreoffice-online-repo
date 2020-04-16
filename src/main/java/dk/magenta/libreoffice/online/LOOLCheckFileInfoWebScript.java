@@ -71,9 +71,19 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
         final WOPIAccessTokenInfo wopiToken = loolService.checkAccessToken(req);
         final NodeRef nodeRef = loolService.getNodeRefForFileId(wopiToken.getFileId());
+
         Map<String, Object> model = new HashMap<>();
         try {
-            final Date lastModifiedDate = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+            Map<QName, Serializable> properties = AuthenticationUtil
+                    .runAs(new AuthenticationUtil.RunAsWork<Map<QName, Serializable>>() {
+                        @Override
+                        public Map<QName, Serializable> doWork() throws Exception {
+                            return nodeService.getProperties(nodeRef);
+                        }
+
+                    }, wopiToken.getUserName());
+
+            final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
             // Convert lastModifiedTime to ISO 8601 according to:
             // https://github.com/LibreOffice/online/blob/master/wsd/Storage.cpp#L460 or
             // look in the
@@ -85,7 +95,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
 
             // BaseFileName need extension, else Lool load it in read-only mode (since
             // 2.1.4)
-            model.put(BASE_FILE_NAME, (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME));
+            model.put(BASE_FILE_NAME, (String) properties.get(ContentModel.PROP_NAME));
             // We need to enable this if we want to be able to insert image into the
             // documents
             model.put(DISABLE_COPY, false);
@@ -95,11 +105,11 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             model.put(HIDE_SAVE_OPTION, false);
             model.put(HIDE_PRINT_OPTION, false);
             model.put(LAST_MODIFIED_TIME, dte);
-            model.put(OWNER_ID, nodeService.getProperty(nodeRef, ContentModel.PROP_CREATOR).toString());
+            model.put(OWNER_ID, properties.get(ContentModel.PROP_CREATOR).toString());
             model.put(SIZE, getSize(nodeRef));
-            model.put(USER_ID, AuthenticationUtil.getRunAsUser());
+            model.put(USER_ID, wopiToken.getUserName());  
             model.put(USER_CAN_WRITE, true);
-            model.put(USER_FRIENDLY_NAME, AuthenticationUtil.getRunAsUser());
+            model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
             model.put(VERSION, getDocumentVersion(nodeRef));
             // Host from which token generation request originated
             model.put(POST_MESSAGE_ORIGIN, loolService.getAlfExternalHost().toString());

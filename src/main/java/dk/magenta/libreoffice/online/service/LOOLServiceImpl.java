@@ -210,10 +210,16 @@ public class LOOLServiceImpl implements LOOLService {
         if (accessToken == null || tokenInfo == null) {
             throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token invalid");
         }
+        
         if (!tokenInfo.isValid()) {
             // try to renew
-            AuthenticationUtil.setRunAsUser(tokenInfo.getUserName());
-            tokenInfo = createAccessToken(getNodeRefForFileId(fileId));
+            tokenInfo = AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<WOPIAccessTokenInfo>() {
+                @Override
+                public WOPIAccessTokenInfo doWork() throws Exception {
+                    return createAccessToken(getNodeRefForFileId(fileId));
+                }
+
+            }, tokenInfo.getUserName());
         }
 
         return tokenInfo;
