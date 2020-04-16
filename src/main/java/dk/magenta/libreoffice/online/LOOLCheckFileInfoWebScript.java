@@ -16,14 +16,10 @@ limitations under the License.
 */
 package dk.magenta.libreoffice.online;
 
-import java.io.IOException;
 import java.io.Serializable;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -69,8 +65,8 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
      * @return
      */
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
-        final WOPIAccessTokenInfo wopiToken = loolService.checkAccessToken(req);
-        final NodeRef nodeRef = loolService.getNodeRefForFileId(wopiToken.getFileId());
+        final WOPIAccessTokenInfo wopiToken = this.loolService.checkAccessToken(req);
+        final NodeRef nodeRef = this.loolService.getNodeRefForFileId(wopiToken.getFileId());
 
         Map<String, Object> model = new HashMap<>();
         try {
@@ -106,11 +102,12 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             model.put(HIDE_PRINT_OPTION, false);
             model.put(LAST_MODIFIED_TIME, dte);
             model.put(OWNER_ID, properties.get(ContentModel.PROP_CREATOR).toString());
-            model.put(SIZE, getSize(nodeRef));
+            final ContentData contentData = (ContentData) properties.get(ContentModel.PROP_CONTENT);
+            model.put(SIZE, contentData.getSize());
             model.put(USER_ID, wopiToken.getUserName());  
             model.put(USER_CAN_WRITE, true);
             model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
-            model.put(VERSION, getDocumentVersion(nodeRef));
+            model.put(VERSION, (String) properties.get(ContentModel.PROP_VERSION_LABEL));
             // Host from which token generation request originated
             model.put(POST_MESSAGE_ORIGIN, loolService.getAlfExternalHost().toString());
             // Search https://www.collaboraoffice.com/category/community-en/ for
@@ -122,34 +119,6 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
         return model;
     }
 
-    /**
-     * Returns the size of the file
-     * 
-     * @param nodeRef
-     * @return
-     */
-    public long getSize(NodeRef nodeRef) {
-        final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
-        return contentData.getSize();
-    }
-
-
-    /**
-     * This gets the version of a document. If the document hasn't been versioned
-     * yet, it adds a versioning aspect to it. Important to note that there are no
-     * checks as to whether the node is a document, hence the node passed to this
-     * method should/must have been sanitized/verified/vetted beforehand.
-     * 
-     * @param nodeRef
-     * @return
-     */
-    public String getDocumentVersion(NodeRef nodeRef) {
-        if (!nodeService.hasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE)) {
-            Map<QName, Serializable> initialVersionProps = new HashMap<QName, Serializable>(1, 1.0f);
-            versionService.ensureVersioningEnabled(nodeRef, initialVersionProps);
-        }
-        return nodeService.getProperty(nodeRef, ContentModel.PROP_VERSION_LABEL).toString();
-    }
 
     public void setLoolService(LOOLService loolService) {
         this.loolService = loolService;
