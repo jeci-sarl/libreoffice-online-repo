@@ -1,5 +1,22 @@
 package dk.magenta.libreoffice.online.service;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigInteger;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.security.SecureRandom;
+import java.util.Date;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPath;
+import javax.xml.xpath.XPathExpressionException;
+import javax.xml.xpath.XPathFactory;
+
 import org.alfresco.error.AlfrescoRuntimeException;
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.admin.SysAdminParams;
@@ -19,24 +36,6 @@ import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
-
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.math.BigInteger;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.security.SecureRandom;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 public class LOOLServiceImpl implements LOOLService {
     private static final Log logger = LogFactory.getLog(LOOLServiceImpl.class);
@@ -72,10 +71,10 @@ public class LOOLServiceImpl implements LOOLService {
      * The get(Object key) method returns a clone of original value, modifying the returned value does not change
      * the actual value in the map. One should put modified value back to make changes visible to all nodes.
      */
-    private SimpleCache<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap;
+    private SimpleCache<String,WOPIAccessTokenInfo> tokenMap;
 
-    public void setFileIdAccessTokenMap(SimpleCache<String, Map<String, WOPIAccessTokenInfo>> fileIdAccessTokenMap) {
-        this.fileIdAccessTokenMap = fileIdAccessTokenMap;
+    public void setTokenMap(SimpleCache<String, WOPIAccessTokenInfo> tokenMap) {
+        this.tokenMap = tokenMap;
     }
 
     public void setNodeService(NodeService nodeService) {
@@ -114,38 +113,34 @@ public class LOOLServiceImpl implements LOOLService {
      */
     @Override
     public WOPIAccessTokenInfo createAccessToken(NodeRef nodeRef) {
-
-
-        final Date now = new Date();
         final String userName = AuthenticationUtil.getRunAsUser();
         final String fileId = nodeRef.getId();
-        Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
+        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(fileId + userName);
 
-        WOPIAccessTokenInfo tokenInfo = null;
-        if (tokenInfoMap != null) {
-            tokenInfo = tokenInfoMap.get(userName);
-            if (tokenInfo != null) {
-                if (tokenInfo.isValid() && tokenInfo.getFileId().equals(fileId)
-                        && tokenInfo.getUserName().equals(userName)) {
-                    // Renew token for a new time-to-live period.
-                    tokenInfo.setExpiresAt(newExpiresAt(now));
-                } else {
-                    // Expired or not valid -- remove it.
-                    tokenInfoMap.remove(userName);
-                }
+        if (tokenInfo != null) {
+            if (tokenInfo.getFileId().equals(fileId) && tokenInfo.getUserName().equals(userName)) {
+                // Renew token for a new time-to-live period
+                final Date now = new Date();
+                tokenInfo.setExpiresAt(newExpiresAt(now));
+            } else {
+                // Look unlikely
+                logger.warn("tokenInfo do not match expected data for " + fileId + " " + userName);
+                this.tokenMap.remove(fileId + userName);
+                tokenInfo = null;
             }
         }
+
+        AccessStatus perm = this.permissionService.hasPermission(nodeRef, PermissionService.READ);
+        if (AccessStatus.ALLOWED != perm) {
+            this.tokenMap.remove(fileId + userName);
+            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Not allow to READ " + nodeRef);
+        }
+
         if (tokenInfo == null) {
-
+            final Date now = new Date();
             tokenInfo = new WOPIAccessTokenInfo(generateAccessToken(), now, newExpiresAt(now), fileId, userName);
-            if (tokenInfoMap == null) {
-                tokenInfoMap = new HashMap<>();
-            }
-            tokenInfoMap.put(userName, tokenInfo);
         }
-
-        // put the tokenInfoMap back to the shared cache, so other servers can see changes
-        this.fileIdAccessTokenMap.put(fileId, tokenInfoMap);
+        this.tokenMap.put(fileId + userName, tokenInfo);
 
         if (logger.isDebugEnabled()) {
             logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
@@ -186,30 +181,20 @@ public class LOOLServiceImpl implements LOOLService {
      */
     @Override
     public WOPIAccessTokenInfo getAccessToken(String accessToken, String fileId) {
-        final Map<String, WOPIAccessTokenInfo> tokenInfoMap = this.fileIdAccessTokenMap.get(fileId);
+        final String userName = AuthenticationUtil.getRunAsUser();
+        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(fileId + userName);
 
-        if (tokenInfoMap == null) {
-            logger.warn("No token access found for " + fileId);
+        if (tokenInfo == null) {
+            logger.warn("No token access found for " + fileId + userName);
             return null;
         }
 
-        WOPIAccessTokenInfo tokenInfo = null;
-        // Find the token in the map values. Note that we don't know the
-        // username for the token at this point, so we can't just do a
-        // simple key lookup.
-        for (WOPIAccessTokenInfo t : tokenInfoMap.values()) {
-            if (t.getAccessToken().equals(accessToken)) {
-                tokenInfo = t;
-                break;
-            }
-        }
+        if (tokenInfo.getAccessToken().equals(accessToken)) {
+            return tokenInfo;
+        } 
 
-        if (tokenInfo == null) {
-            logger.warn("Tokens exist for " + fileId + ", but not for the given access token");
-        }
-
-        // Found the access token for the given file id.
-        return tokenInfo;
+        logger.warn("Tokens stored for " + fileId + userName + ", not match the given access token");
+        return null;
     }
 
     /**

@@ -34,7 +34,7 @@
     <!--Note that the discovery url is added here for some flexibility-->
     <bean id="LOOLService"
           class="dk.magenta.libreoffice.online.service.LOOLServiceImpl" init-method="init">
-        <property name="fileIdAccessTokenMap" ref="lool-fileIdAccessTokenMapSharedCache"/>
+        <property name="tokenMap" ref="lool-fileIdAccessTokenMapSharedCache"/>
         <property name="wopiBaseURL" value="${lool.wopi.url}"/>
         <property name="wopiDiscoveryURL" value="${lool.wopi.url.discovery}"/>
         <property name="alfExternalHost" value="${lool.wopi.alfresco.host}"/>
