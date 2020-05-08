@@ -39,9 +39,9 @@
 	<bean id="webscript.dk.magenta.wopi.file.post" class="dk.magenta.libreoffice.online.LOOLPutFileWebScript"
 		  parent="webscript">
 		<property name="contentService" ref="ContentService"/>
+		<property name="loolService" ref="LOOLService"/>
 		<property name="nodeService" ref="nodeService"/>
 		<property name="retryingTransactionHelper" ref="retryingTransactionHelper" />
-		<property name="wopiTokenService" ref="LOOLWPOITokenService" />
 		<property name="versionService" ref="versionService" />
 		<property name="mimetypeService" ref="mimetypeService" />
 	</bean>

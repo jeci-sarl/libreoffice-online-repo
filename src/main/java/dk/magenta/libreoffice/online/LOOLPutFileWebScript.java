@@ -51,15 +51,15 @@ import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
+import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.PersonInfo;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
-import dk.magenta.libreoffice.online.service.WOPITokenService;
 
 public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConstant {
 
     private static final Log logger = LogFactory.getLog(LOOLPutFileWebScript.class);
 
-    private WOPITokenService wopiTokenService;
+    private LOOLService loolService;
     private NodeService nodeService;
     private ContentService contentService;
     private VersionService versionService;
@@ -73,6 +73,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
     @Override
     public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
+        final WOPIAccessTokenInfo wopiToken = this.loolService.checkAccessToken(req);
 
         final String wopiOverrideHeader = req.getHeader(X_WOPI_OVERRIDE);
 
@@ -93,24 +94,19 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
         }
 
         try {
-            final WOPIAccessTokenInfo tokenInfo = wopiTokenService.getTokenInfo(req);
-            if (tokenInfo == null) {
-                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, "No tokens found for this file id.");
-            }
-
             // Verifying that the user actually exists
-            final PersonInfo person = wopiTokenService.getUserInfoOfToken(tokenInfo);
-            if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != tokenInfo.getUserName()) {
+            final PersonInfo person = loolService.getUserInfoOfToken(wopiToken);
+            if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != wopiToken.getUserName()) {
                 throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
                         "The user no longer appears to exist.");
             }
 
-            final NodeRef nodeRef = wopiTokenService.getFileNodeRef(tokenInfo);
+            final NodeRef nodeRef = loolService.getFileNodeRef(wopiToken);
 
             boolean success = checkTimestamp(req, res, nodeRef);
 
             if (success) {
-                writeFileToDisk(req, isAutosave, tokenInfo, nodeRef);
+                writeFileToDisk(req, isAutosave, wopiToken, nodeRef);
                 responseNewModifiedTime(res, nodeRef);
             }
 
@@ -141,13 +137,13 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
      * @param req
      * @param isAutosave
      *            id true, set PROP_DESCRIPTION, "Edit with Collabora"
-     * @param tokenInfo
+     * @param wopiToken
      * @param nodeRef
      * @throws IOException
      * @throws ContentIOException
      */
     private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
-            final WOPIAccessTokenInfo tokenInfo, final NodeRef nodeRef) throws ContentIOException, IOException {
+            final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) throws ContentIOException, IOException {
 
         /* First write content from HTTP stream to the content store. */
         final ContentWriter writer = AuthenticationUtil.runAs(new RunAsWork<ContentWriter>() {
@@ -162,13 +158,13 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
                     logger.info("Filename upload " + name);
                 }
 
-                String  mimetype = mimetypeService.guessMimetype(name, writer.getReader());
+                String mimetype = mimetypeService.guessMimetype(name, writer.getReader());
                 writer.setMimetype(mimetype);
                 writer.guessEncoding();
 
                 return writer;
             }
-        }, tokenInfo.getUserName());
+        }, wopiToken.getUserName());
 
         /*
          * Then attach the content to the noderef. This prevent the
@@ -178,7 +174,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             @Override
             public Void execute() throws Throwable {
                 try {
-                    AuthenticationUtil.setFullyAuthenticatedUser(tokenInfo.getUserName());
+                    AuthenticationUtil.setFullyAuthenticatedUser(wopiToken.getUserName());
 
                     ContentData contentData = writer.getContentData();
                     nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
@@ -272,8 +268,8 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
         res.getWriter().append(response);
     }
 
-    public void setWopiTokenService(WOPITokenService wopiTokenService) {
-        this.wopiTokenService = wopiTokenService;
+    public void setLoolService(LOOLService loolService) {
+        this.loolService = loolService;
     }
 
     public void setNodeService(NodeService nodeService) {
@@ -291,7 +287,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
     public void setRetryingTransactionHelper(RetryingTransactionHelper retryingTransactionHelper) {
         this.retryingTransactionHelper = retryingTransactionHelper;
     }
-    
+
     public void setMimetypeService(MimetypeService mimetypeService) {
         this.mimetypeService = mimetypeService;
     }
