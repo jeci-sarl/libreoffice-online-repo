@@ -70,8 +70,11 @@ public class WOPITokenServiceImpl implements WOPITokenService {
      *
      * @param req
      * @return
+     * @deprecated We don't want Token not checked
+     *             {@link LOOLServiceImpl#checkAccessToken(WebScriptRequest)}
      */
     @Override
+    @Deprecated
     public WOPIAccessTokenInfo getTokenInfo(WebScriptRequest req) {
         final String fileId = req.getServiceMatch().getTemplateVars().get(FILE_ID);
         final String accessToken = req.getParameter(ACCESS_TOKEN);

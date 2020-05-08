@@ -35,7 +35,10 @@ public interface WOPITokenService {
      * 
      * @param req
      * @return
+     * @deprecated We don't want Token not checked
+     *             {@link LOOLService#checkAccessToken(WebScriptRequest)}
      */
+    @Deprecated
     WOPIAccessTokenInfo getTokenInfo(WebScriptRequest req);
 
 }
