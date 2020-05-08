@@ -11,6 +11,9 @@ import java.net.URL;
  * Created by seth on 30/04/16.
  */
 public interface LOOLService {
+    String ACCESS_TOKEN = "access_token";
+    String FILE_ID = "fileId";
+
     /**
      * Generate and store an access token only valid for the current user/file id
      * combination.
@@ -34,8 +37,8 @@ public interface LOOLService {
     WOPIAccessTokenInfo getAccessToken(String accessToken, String fileId);
 
     /**
-     * Check the access token given in the request and return the WOPIAccessTokenInfo
-     * corresponding to the token
+     * Check the access token given in the request and return the
+     * WOPIAccessTokenInfo corresponding to the token
      *
      *
      * @param req

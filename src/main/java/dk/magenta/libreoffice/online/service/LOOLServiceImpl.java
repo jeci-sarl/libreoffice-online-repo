@@ -201,7 +201,7 @@ public class LOOLServiceImpl implements LOOLService {
      */
     @Override
     public WOPIAccessTokenInfo checkAccessToken(WebScriptRequest req) throws WebScriptException {
-        final String fileId = req.getServiceMatch().getTemplateVars().get(WOPITokenService.FILE_ID);
+        final String fileId = req.getServiceMatch().getTemplateVars().get(FILE_ID);
         
         if (logger.isDebugEnabled()) {
             logger.debug("Check Access Token for: " + fileId);
@@ -211,7 +211,7 @@ public class LOOLServiceImpl implements LOOLService {
             throw new WebScriptException("No 'fileId' parameter supplied");
         }
 
-        final String accessToken = req.getParameter(WOPITokenService.ACCESS_TOKEN);
+        final String accessToken = req.getParameter(ACCESS_TOKEN);
         WOPIAccessTokenInfo tokenInfo = getAccessToken(accessToken, fileId);
         // Check access token
         if (accessToken == null || tokenInfo == null) {
