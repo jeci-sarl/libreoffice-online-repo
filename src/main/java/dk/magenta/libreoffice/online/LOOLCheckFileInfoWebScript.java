@@ -16,6 +16,7 @@ limitations under the License.
 */
 package dk.magenta.libreoffice.online;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -32,14 +33,33 @@ import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.namespace.QName;
 import org.springframework.extensions.webscripts.Cache;
+import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
+import org.springframework.extensions.webscripts.WebScriptResponse;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
-public class LOOLCheckFileInfoWebScript extends LOOLAbstractWebScript implements WOPIConstant {
+public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
+    private final static String ENABLE_OWNER_TERMINATION = "EnableOwnerTermination";
+    private final static String POST_MESSAGE_ORIGIN = "PostMessageOrigin";
+    private final static String VERSION = "Version";
+    private final static String USER_FRIENDLY_NAME = "UserFriendlyName";
+    private final static String USER_CAN_WRITE = "UserCanWrite";
+    private final static String USER_ID = "UserId";
+    private final static String SIZE = "Size";
+    private final static String OWNER_ID = "OwnerId";
+    private final static String LAST_MODIFIED_TIME = "LastModifiedTime";
+    private final static String HIDE_PRINT_OPTION = "HidePrintOption";
+    private final static String HIDE_SAVE_OPTION = "HideSaveOption";
+    private final static String HIDE_EXPORT_OPTION = "HideExportOption";
+    private final static String DISABLE_EXPORT = "DisableExport";
+    private final static String DISABLE_PRINT = "DisablePrint";
+    private final static String DISABLE_COPY = "DisableCopy";
+    private final static String BASE_FILE_NAME = "BaseFileName";
+
     private LOOLService loolService;
     private NodeService nodeService;
     private VersionService versionService;
@@ -59,15 +79,24 @@ public class LOOLCheckFileInfoWebScript extends LOOLAbstractWebScript implements
      * @param cache
      * @return
      */
+    @Override
     protected Map<String, Object> executeImpl(WebScriptRequest req, Status status, Cache cache) {
-        final WOPIAccessTokenInfo wopiToken = this.loolService.checkAccessToken(req);
-        final NodeRef nodeRef = this.loolService.getNodeRefForFileId(wopiToken.getFileId());
+        // can't extends two classes in java
+        LOOLAbstractWebScript dws = new LOOLAbstractWebScript() {
+            @Override
+            public void execute(WebScriptRequest req, WebScriptResponse res) throws IOException {
+                // NOP
+            }
+        };
+        dws.setNodeService(this.nodeService);
+        final WOPIAccessTokenInfo wopiToken = dws.wopiToken(req);
+        final NodeRef nodeRef = dws.getFileNodeRef(wopiToken);
 
         ensureVersioningEnabled(wopiToken, nodeRef);
 
         Map<String, Object> model = new HashMap<>();
         try {
-            Map<QName, Serializable> properties = runAsGetProperties(wopiToken, nodeRef);
+            Map<QName, Serializable> properties = dws.runAsGetProperties(wopiToken, nodeRef);
 
             final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
             // Convert lastModifiedTime to ISO 8601 according to:

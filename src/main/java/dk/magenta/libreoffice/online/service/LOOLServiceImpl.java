@@ -25,17 +25,13 @@ import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
-import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.cmr.security.AccessStatus;
-import org.alfresco.service.cmr.security.NoSuchPersonException;
 import org.alfresco.service.cmr.security.PermissionService;
-import org.alfresco.service.cmr.security.PersonService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptException;
-import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -46,7 +42,7 @@ public class LOOLServiceImpl implements LOOLService {
 
     private static final long DEFAULT_TOKEN_TTL_MS = ONE_HOUR_MS * 24;
     private long tokenTtlMs = -1;
-    
+
     private static final int DEFAULT_WOPI_PORT = 9980;
 
     private URL wopiBaseURL;
@@ -56,7 +52,6 @@ public class LOOLServiceImpl implements LOOLService {
     private WOPILoader wopiLoader;
     private NodeService nodeService;
     private PermissionService permissionService;
-    private PersonService personService;
     private SysAdminParams sysAdminParams;
 
     private SecureRandom random = new SecureRandom();
@@ -66,15 +61,17 @@ public class LOOLServiceImpl implements LOOLService {
      * is mapped to a user, so in essence a user may only have one token info per
      * file. <FileId, <userName, tokenInfo> >
      * <p>
-     * { fileId: { <== The id of the nodeRef that refers to the file userName: WOPIAccessTokenInfo } }
+     * { fileId: { <== The id of the nodeRef that refers to the file userName:
+     * WOPIAccessTokenInfo } }
      *
      *
-     * fileIdAccessTokenMap is an Hazelcast IMap
-     * see: https://docs.hazelcast.org/docs/2.4/javadoc/com/hazelcast/core/IMap.html
-     * The get(Object key) method returns a clone of original value, modifying the returned value does not change
-     * the actual value in the map. One should put modified value back to make changes visible to all nodes.
+     * fileIdAccessTokenMap is an Hazelcast IMap see:
+     * https://docs.hazelcast.org/docs/2.4/javadoc/com/hazelcast/core/IMap.html The
+     * get(Object key) method returns a clone of original value, modifying the
+     * returned value does not change the actual value in the map. One should put
+     * modified value back to make changes visible to all nodes.
      */
-    private SimpleCache<String,WOPIAccessTokenInfo> tokenMap;
+    private SimpleCache<String, WOPIAccessTokenInfo> tokenMap;
 
     public void setTokenMap(SimpleCache<String, WOPIAccessTokenInfo> tokenMap) {
         this.tokenMap = tokenMap;
@@ -83,13 +80,9 @@ public class LOOLServiceImpl implements LOOLService {
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
     }
-    
+
     public void setPermissionService(PermissionService permissionService) {
         this.permissionService = permissionService;
-    }
-
-    public void setPersonService(PersonService personService) {
-        this.personService = personService;
     }
 
     public void setWopiBaseURL(URL wopiBaseURL) {
@@ -103,7 +96,7 @@ public class LOOLServiceImpl implements LOOLService {
     public void setAlfExternalHost(URL alfExternalHost) {
         this.alfExternalHost = alfExternalHost;
     }
-    
+
     public void setTokenTtlMs(long tokenTtlMs) {
         this.tokenTtlMs = tokenTtlMs;
     }
@@ -140,7 +133,7 @@ public class LOOLServiceImpl implements LOOLService {
         }
         return tokenInfo;
     }
-    
+
     /**
      * Compute token time to live
      * 
@@ -165,90 +158,27 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
-     * Return stored info about the given token if it exists. Otherwise, return
-     * null.
-     *
-     * @param accessToken
-     * @param fileId
-     * @return
-     */
-    @Override
-    public WOPIAccessTokenInfo getAccessToken(String accessToken, String fileId) {
-        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(accessToken);
-
-        if (tokenInfo == null) {
-            logger.warn("No token access found for " + accessToken);
-            return null;
-        }
-
-        if (tokenInfo.getFileId().equals(fileId)) {
-            return tokenInfo;
-        }
-
-        logger.warn("Tokens stored for " + accessToken + ", not match the given fileId" + fileId);
-        return null;
-    }
-
-    /**
      * Check the access token given in the request and return the nodeRef
      * corresponding to the file id passed to the request.
-     *
-     * Additionally, set the runAs user to the user corresponding to the token.
      *
      * @param req
      * @throws WebScriptException
      * @return
      */
     @Override
-    public WOPIAccessTokenInfo checkAccessToken(WebScriptRequest req) throws WebScriptException {
-        final String fileId = req.getServiceMatch().getTemplateVars().get(FILE_ID);
-        
-        if (logger.isDebugEnabled()) {
-            logger.debug("Check Access Token for: " + fileId);
-        }
-        
-        if (fileId == null) {
-            throw new WebScriptException("No 'fileId' parameter supplied");
+    public WOPIAccessTokenInfo checkAccessToken(final String accessToken, final NodeRef nodeRef) {
+        WOPIAccessTokenInfo tokenInfo = this.tokenMap.get(accessToken);
+
+        if (tokenInfo == null) {
+            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "No token access found for " + accessToken);
         }
 
-        final String accessToken = req.getParameter(ACCESS_TOKEN);
-        WOPIAccessTokenInfo tokenInfo = getAccessToken(accessToken, fileId);
-        // Check access token
-        if (accessToken == null || tokenInfo == null) {
-            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, "Access token invalid");
-        }
-        
-        if (!tokenInfo.isValid()) {
-            // try to renew
-            tokenInfo = AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<WOPIAccessTokenInfo>() {
-                @Override
-                public WOPIAccessTokenInfo doWork() throws Exception {
-                    return createAccessToken(getNodeRefForFileId(fileId));
-                }
-
-            }, tokenInfo.getUserName());
+        if (!tokenInfo.getFileId().equals(nodeRef.getId())) {
+            throw new WebScriptException(Status.STATUS_UNAUTHORIZED,
+                    "Tokens stored for " + accessToken + ", not match the given file" + nodeRef);
         }
 
         return tokenInfo;
-    }
-
-    /**
-     * Returns a PersonInfo for the token in question
-     *
-     * @param tokenInfo
-     * @return
-     */
-    @Override
-    public PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo) {
-        final String userName = tokenInfo.getUserName();
-        try {
-            final NodeRef personNode = personService.getPerson(userName);
-            return new PersonInfo(personService.getPerson(personNode));
-        } catch (NoSuchPersonException npe) {
-            logger.error("Unable to retrieve person from user id [" + userName + "] specified in token.", npe);
-            throw new NoSuchPersonException(
-                    "Unable to verify that the person exists. Please contact the system administrator");
-        }
     }
 
     /**
@@ -262,33 +192,6 @@ public class LOOLServiceImpl implements LOOLService {
     public String getWopiSrcURL(NodeRef nodeRef, String action) throws IOException {
         final ContentData contentData = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
         return wopiLoader.getSrcURL(contentData.getMimetype(), action);
-    }
-
-    /**
-     * Returns a NodeRef given a file Id. Note: Checks to see if the node exists
-     * aren't performed
-     * 
-     * @param fileId
-     * @return
-     */
-    @Override
-    public NodeRef getNodeRefForFileId(String fileId) {
-        return new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, fileId);
-    }
-
-    /**
-     * Will return a file nodeRef for the Token in question
-     *
-     * @param tokenInfo
-     * @return
-     */
-    @Override
-    public NodeRef getFileNodeRef(WOPIAccessTokenInfo tokenInfo) {
-        final NodeRef fileNodeRef = new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, tokenInfo.getFileId());
-        if (nodeService.exists(fileNodeRef)) {
-            return fileNodeRef;
-        }
-        return null;
     }
 
     /**

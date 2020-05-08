@@ -39,28 +39,24 @@ import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.ContentWriter;
 import org.alfresco.service.cmr.repository.MimetypeService;
 import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
-import dk.magenta.libreoffice.online.service.LOOLService;
-import dk.magenta.libreoffice.online.service.PersonInfo;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
-public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConstant {
-
+public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
     private static final Log logger = LogFactory.getLog(LOOLPutFileWebScript.class);
 
-    private LOOLService loolService;
-    private NodeService nodeService;
+    final static String X_LOOL_WOPI_IS_AUTOSAVE = "X-LOOL-WOPI-IsAutosave";
+    final static String X_LOOL_WOPI_TIMESTAMP = "X-LOOL-WOPI-Timestamp";
+    final static String X_WOPI_OVERRIDE = "X-WOPI-Override";
+
     private ContentService contentService;
     private VersionService versionService;
     private RetryingTransactionHelper retryingTransactionHelper;
@@ -73,10 +69,7 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
     @Override
     public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
-        final WOPIAccessTokenInfo wopiToken = this.loolService.checkAccessToken(req);
-
         final String wopiOverrideHeader = req.getHeader(X_WOPI_OVERRIDE);
-
         if (wopiOverrideHeader == null || !wopiOverrideHeader.equals("PUT")) {
             throw new WebScriptException(X_WOPI_OVERRIDE + " header must be present and equal to 'PUT'");
         }
@@ -93,16 +86,10 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             logger.debug("Request " + (isAutosave ? "is" : "is not") + " AUTOSAVE");
         }
 
+        final WOPIAccessTokenInfo wopiToken = wopiToken(req);
+        final NodeRef nodeRef = getFileNodeRef(wopiToken);
+
         try {
-            // Verifying that the user actually exists
-            final PersonInfo person = loolService.getUserInfoOfToken(wopiToken);
-            if (StringUtils.isBlank(person.getUserName()) && person.getUserName() != wopiToken.getUserName()) {
-                throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR,
-                        "The user no longer appears to exist.");
-            }
-
-            final NodeRef nodeRef = loolService.getFileNodeRef(wopiToken);
-
             boolean success = checkTimestamp(req, res, nodeRef);
 
             if (success) {
@@ -117,14 +104,6 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
 
         } catch (ContentIOException we) {
             final String msg = "Error writing to file";
-            logger.error(msg, we);
-            throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, msg);
-        } catch (WebScriptException we) {
-            final String msg = "Access token invalid or expired";
-            logger.error(msg, we);
-            throw new WebScriptException(Status.STATUS_UNAUTHORIZED, msg);
-        } catch (NullPointerException we) {
-            final String msg = "Unidentified problem writing to file please consult system administrator for help on this issue";
             logger.error(msg, we);
             throw new WebScriptException(Status.STATUS_INTERNAL_SERVER_ERROR, msg);
         }
@@ -146,8 +125,8 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
             final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) throws ContentIOException, IOException {
 
         /* First write content from HTTP stream to the content store. */
-        final ContentWriter writer = AuthenticationUtil.runAs(new RunAsWork<ContentWriter>() {
-            public ContentWriter doWork() throws Exception {
+        AuthenticationUtil.runAs(new RunAsWork<Void>() {
+            public Void doWork() throws Exception {
                 final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
 
                 final InputStream inputStream = req.getContent().getInputStream();
@@ -162,37 +141,31 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
                 writer.setMimetype(mimetype);
                 writer.guessEncoding();
 
-                return writer;
+                new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+                    /*
+                     * Then attach the content to the noderef. This prevent the
+                     * RetryingTransactionHelper mecanisme to store empty content.
+                     */
+                    @Override
+                    public Void execute() throws Throwable {
+                        ContentData contentData = writer.getContentData();
+                        nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
+
+                        Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
+                        versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                        if (isAutosave) {
+                            versionProperties.put(VersionModel.PROP_DESCRIPTION, AUTOSAVE_DESCRIPTION);
+                        }
+                        versionProperties.put(LOOL_AUTOSAVE, isAutosave);
+                        versionService.createVersion(nodeRef, versionProperties);
+                        return null;
+                    }
+
+                };
+                return null;
             }
         }, wopiToken.getUserName());
 
-        /*
-         * Then attach the content to the noderef. This prevent the
-         * RetryingTransactionHelper mecanisme to store empty content.
-         */
-        retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-            @Override
-            public Void execute() throws Throwable {
-                try {
-                    AuthenticationUtil.setFullyAuthenticatedUser(wopiToken.getUserName());
-
-                    ContentData contentData = writer.getContentData();
-                    nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
-
-                    Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
-                    versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
-                    if (isAutosave) {
-                        versionProperties.put(VersionModel.PROP_DESCRIPTION, AUTOSAVE_DESCRIPTION);
-                    }
-                    versionProperties.put(LOOL_AUTOSAVE, isAutosave);
-                    versionService.createVersion(nodeRef, versionProperties);
-
-                } finally {
-                    AuthenticationUtil.clearCurrentSecurityContext();
-                }
-                return null;
-            }
-        }, false, true);
     }
 
     /**
@@ -266,14 +239,6 @@ public class LOOLPutFileWebScript extends AbstractWebScript implements WOPIConst
         res.setStatus(code);
         res.setContentType("application/json;charset=UTF-8");
         res.getWriter().append(response);
-    }
-
-    public void setLoolService(LOOLService loolService) {
-        this.loolService = loolService;
-    }
-
-    public void setNodeService(NodeService nodeService) {
-        this.nodeService = nodeService;
     }
 
     public void setContentService(ContentService contentService) {

@@ -42,12 +42,6 @@
         <property name="nodeService" ref="NodeService"/>
         <property name="permissionService" ref="PermissionService"/>
         <property name="sysAdminParams" ref="sysAdminParams"/>
-        <property name="personService" ref="personService"/>
-    </bean>
-
-    <!--A simple service for dealing with token-->
-    <bean id="LOOLWPOITokenService" class="dk.magenta.libreoffice.online.service.WOPITokenServiceImpl">
-        <property name="loolService" ref="LOOLService" />
     </bean>
 
 </beans>

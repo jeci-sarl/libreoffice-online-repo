@@ -26,45 +26,39 @@ import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.NodeRef;
-import org.alfresco.service.cmr.repository.NodeService;
 import org.apache.commons.io.IOUtils;
-import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
-import dk.magenta.libreoffice.online.service.LOOLService;
-import dk.magenta.libreoffice.online.service.LOOLServiceImpl;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
-public class LOOLGetFileWebScript extends AbstractWebScript {
-    private LOOLService loolService;
-    private NodeService nodeService;
+public class LOOLGetFileWebScript extends LOOLAbstractWebScript {
     private ContentService contentService;
 
     @Override
-    public void execute(WebScriptRequest req, WebScriptResponse res) throws IOException {
-        final WOPIAccessTokenInfo wopiToken = loolService.checkAccessToken(req);
-        final NodeRef nodeRef = loolService.getNodeRefForFileId(wopiToken.getFileId());
-        AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+    public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
+        final WOPIAccessTokenInfo wopiToken = wopiToken(req);
+        final NodeRef nodeRef = getFileNodeRef(wopiToken);
 
-        final ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
-        res.setContentType(contentProp.getMimetype());
-        res.setContentEncoding(contentProp.getEncoding());
+        AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Void>() {
+            @Override
+            public Void doWork() throws Exception {
+                final ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef,
+                        ContentModel.PROP_CONTENT);
+                res.setContentType(contentProp.getMimetype());
+                res.setContentEncoding(contentProp.getEncoding());
 
-        final ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
+                final ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
 
-        try (InputStream inputStream = reader.getContentInputStream();
-                OutputStream outputStream = res.getOutputStream();) {
-            IOUtils.copy(inputStream, outputStream);
-        }
-    }
+                try (InputStream inputStream = reader.getContentInputStream();
+                        OutputStream outputStream = res.getOutputStream();) {
+                    IOUtils.copy(inputStream, outputStream);
+                }
+                return null;
+            }
 
-    public void setLoolService(LOOLServiceImpl loolService) {
-        this.loolService = loolService;
-    }
+        }, wopiToken.getUserName());
 
-    public void setNodeService(NodeService nodeService) {
-        this.nodeService = nodeService;
     }
 
     public void setContentService(ContentService contentService) {
