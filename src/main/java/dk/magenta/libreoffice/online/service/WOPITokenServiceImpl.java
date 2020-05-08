@@ -50,18 +50,13 @@ public class WOPITokenServiceImpl implements WOPITokenService {
      *
      * @param tokenInfo
      * @return
+     * @deprecated move to
+     *             {@link LOOLServiceImpl#getUserInfoOfToken(WOPIAccessTokenInfo)}
      */
+    @Deprecated
     @Override
     public PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo) {
-        final String userName = tokenInfo.getUserName();
-        try {
-            final NodeRef personNode = personService.getPerson(userName);
-            return new PersonInfo(personService.getPerson(personNode));
-        } catch (NoSuchPersonException npe) {
-            logger.error("Unable to retrieve person from user id [" + userName + "] specified in token.", npe);
-            throw new NoSuchPersonException(
-                    "Unable to verify that the person exists. Please contact the system administrator");
-        }
+        return loolService.getUserInfoOfToken(tokenInfo);
     }
 
     /**

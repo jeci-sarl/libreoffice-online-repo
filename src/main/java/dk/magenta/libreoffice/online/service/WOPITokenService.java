@@ -29,7 +29,9 @@ public interface WOPITokenService {
      * 
      * @param tokenInfo
      * @return
+     * @deprecated {@link LOOLService#getUserInfoOfToken(WOPIAccessTokenInfo)}
      */
+    @Deprecated
     PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo);
 
     /**

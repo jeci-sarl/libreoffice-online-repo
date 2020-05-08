@@ -87,4 +87,12 @@ public interface LOOLService {
      * @return
      */
     URL getAlfExternalHost();
+
+    /**
+     * Returns a PersonInfo for the token in question
+     *
+     * @param tokenInfo
+     * @return
+     */
+    PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo);
 }

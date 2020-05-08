@@ -27,7 +27,9 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.repository.StoreRef;
 import org.alfresco.service.cmr.security.AccessStatus;
+import org.alfresco.service.cmr.security.NoSuchPersonException;
 import org.alfresco.service.cmr.security.PermissionService;
+import org.alfresco.service.cmr.security.PersonService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -54,6 +56,7 @@ public class LOOLServiceImpl implements LOOLService {
     private WOPILoader wopiLoader;
     private NodeService nodeService;
     private PermissionService permissionService;
+    private PersonService personService;
     private SysAdminParams sysAdminParams;
 
     private SecureRandom random = new SecureRandom();
@@ -83,6 +86,10 @@ public class LOOLServiceImpl implements LOOLService {
     
     public void setPermissionService(PermissionService permissionService) {
         this.permissionService = permissionService;
+    }
+
+    public void setPersonService(PersonService personService) {
+        this.personService = personService;
     }
 
     public void setWopiBaseURL(URL wopiBaseURL) {
@@ -223,6 +230,25 @@ public class LOOLServiceImpl implements LOOLService {
         }
 
         return tokenInfo;
+    }
+
+    /**
+     * Returns a PersonInfo for the token in question
+     *
+     * @param tokenInfo
+     * @return
+     */
+    @Override
+    public PersonInfo getUserInfoOfToken(WOPIAccessTokenInfo tokenInfo) {
+        final String userName = tokenInfo.getUserName();
+        try {
+            final NodeRef personNode = personService.getPerson(userName);
+            return new PersonInfo(personService.getPerson(personNode));
+        } catch (NoSuchPersonException npe) {
+            logger.error("Unable to retrieve person from user id [" + userName + "] specified in token.", npe);
+            throw new NoSuchPersonException(
+                    "Unable to verify that the person exists. Please contact the system administrator");
+        }
     }
 
     /**
