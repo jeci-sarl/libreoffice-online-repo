@@ -159,4 +159,8 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
     public void setVersionService(VersionService versionService) {
         this.versionService = versionService;
     }
+    
+    public void setNodeService(NodeService nodeService) {
+        this.nodeService = nodeService;
+    }
 }
