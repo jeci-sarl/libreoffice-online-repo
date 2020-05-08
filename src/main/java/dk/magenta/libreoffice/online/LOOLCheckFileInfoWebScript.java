@@ -72,14 +72,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
 
         Map<String, Object> model = new HashMap<>();
         try {
-            Map<QName, Serializable> properties = AuthenticationUtil
-                    .runAs(new AuthenticationUtil.RunAsWork<Map<QName, Serializable>>() {
-                        @Override
-                        public Map<QName, Serializable> doWork() throws Exception {
-                            return nodeService.getProperties(nodeRef);
-                        }
-
-                    }, wopiToken.getUserName());
+            Map<QName, Serializable> properties = runAsGetProperties(wopiToken, nodeRef);
 
             final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
             // Convert lastModifiedTime to ISO 8601 according to:
@@ -119,6 +112,18 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             throw new WebScriptException(Status.STATUS_BAD_REQUEST, "error returning file nodeRef", ge);
         }
         return model;
+    }
+
+
+    private Map<QName, Serializable> runAsGetProperties(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
+        return AuthenticationUtil
+                .runAs(new AuthenticationUtil.RunAsWork<Map<QName, Serializable>>() {
+                    @Override
+                    public Map<QName, Serializable> doWork() throws Exception {
+                        return nodeService.getProperties(nodeRef);
+                    }
+
+                }, wopiToken.getUserName());
     }
 
 
