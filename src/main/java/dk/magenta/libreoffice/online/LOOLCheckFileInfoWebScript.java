@@ -68,6 +68,8 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
         final WOPIAccessTokenInfo wopiToken = this.loolService.checkAccessToken(req);
         final NodeRef nodeRef = this.loolService.getNodeRefForFileId(wopiToken.getFileId());
 
+        ensureVersioningEnabled(wopiToken, nodeRef);
+
         Map<String, Object> model = new HashMap<>();
         try {
             Map<QName, Serializable> properties = AuthenticationUtil
@@ -117,6 +119,21 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             throw new WebScriptException(Status.STATUS_BAD_REQUEST, "error returning file nodeRef", ge);
         }
         return model;
+    }
+
+
+    private void ensureVersioningEnabled(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
+        // Force Versionning
+        AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Void>() {
+            @Override
+            public Void doWork() throws Exception {
+                if (!nodeService.hasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE)) {
+                    Map<QName, Serializable> initialVersionProps = new HashMap<QName, Serializable>(1, 1.0f);
+                    versionService.ensureVersioningEnabled(nodeRef, initialVersionProps);
+                }
+                return null;
+            }
+        }, wopiToken.getUserName());
     }
 
 
