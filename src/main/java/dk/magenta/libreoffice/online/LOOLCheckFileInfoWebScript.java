@@ -31,8 +31,6 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.namespace.QName;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.extensions.webscripts.Cache;
 import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
@@ -43,8 +41,6 @@ import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
 public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements WOPIConstant {
-    private static final Logger logger = LoggerFactory.getLogger(LOOLCheckFileInfoWebScript.class);
-    
     private LOOLService loolService;
     private NodeService nodeService;
     private VersionService versionService;
