@@ -32,7 +32,6 @@ import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.namespace.QName;
 import org.springframework.extensions.webscripts.Cache;
-import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
@@ -40,7 +39,7 @@ import org.springframework.extensions.webscripts.WebScriptRequest;
 import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
-public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements WOPIConstant {
+public class LOOLCheckFileInfoWebScript extends LOOLAbstractWebScript implements WOPIConstant {
     private LOOLService loolService;
     private NodeService nodeService;
     private VersionService versionService;
@@ -95,7 +94,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
             model.put(OWNER_ID, properties.get(ContentModel.PROP_CREATOR).toString());
             final ContentData contentData = (ContentData) properties.get(ContentModel.PROP_CONTENT);
             model.put(SIZE, contentData.getSize());
-            model.put(USER_ID, wopiToken.getUserName());  
+            model.put(USER_ID, wopiToken.getUserName());
             model.put(USER_CAN_WRITE, true);
             model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
             model.put(VERSION, (String) properties.get(ContentModel.PROP_VERSION_LABEL));
@@ -109,19 +108,6 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
         }
         return model;
     }
-
-
-    private Map<QName, Serializable> runAsGetProperties(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
-        return AuthenticationUtil
-                .runAs(new AuthenticationUtil.RunAsWork<Map<QName, Serializable>>() {
-                    @Override
-                    public Map<QName, Serializable> doWork() throws Exception {
-                        return nodeService.getProperties(nodeRef);
-                    }
-
-                }, wopiToken.getUserName());
-    }
-
 
     private void ensureVersioningEnabled(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
         // Force Versionning
@@ -137,13 +123,8 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript implements 
         }, wopiToken.getUserName());
     }
 
-
     public void setLoolService(LOOLService loolService) {
         this.loolService = loolService;
-    }
-
-    public void setNodeService(NodeService nodeService) {
-        this.nodeService = nodeService;
     }
 
     public void setVersionService(VersionService versionService) {
