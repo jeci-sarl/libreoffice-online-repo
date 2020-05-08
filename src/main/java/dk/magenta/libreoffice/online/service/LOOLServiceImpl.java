@@ -251,6 +251,21 @@ public class LOOLServiceImpl implements LOOLService {
     }
 
     /**
+     * Will return a file nodeRef for the Token in question
+     *
+     * @param tokenInfo
+     * @return
+     */
+    @Override
+    public NodeRef getFileNodeRef(WOPIAccessTokenInfo tokenInfo) {
+        final NodeRef fileNodeRef = new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, tokenInfo.getFileId());
+        if (nodeService.exists(fileNodeRef)) {
+            return fileNodeRef;
+        }
+        return null;
+    }
+
+    /**
      * In the case that Alfresco is behind a proxy and not using the proxy hostname
      * in the alfresco config section of the alfresco-global.properties file, then
      * we should be able to set a property in alfresco-global.properties for this

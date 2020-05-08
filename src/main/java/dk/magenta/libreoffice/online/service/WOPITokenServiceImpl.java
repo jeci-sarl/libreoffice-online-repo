@@ -36,14 +36,13 @@ public class WOPITokenServiceImpl implements WOPITokenService {
      *
      * @param tokenInfo
      * @return
+     * @deprecated move to
+     *             {@link LOOLServiceImpl#getFileNodeRef(WOPIAccessTokenInfo)}
      */
+    @Deprecated
     @Override
     public NodeRef getFileNodeRef(WOPIAccessTokenInfo tokenInfo) {
-        final NodeRef fileNodeRef = new NodeRef(StoreRef.STORE_REF_WORKSPACE_SPACESSTORE, tokenInfo.getFileId());
-        if (nodeService.exists(fileNodeRef)) {
-            return fileNodeRef;
-        }
-        return null;
+        return loolService.getFileNodeRef(tokenInfo);
     }
 
     /**

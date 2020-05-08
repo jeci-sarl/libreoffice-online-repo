@@ -19,7 +19,9 @@ public interface WOPITokenService {
      * 
      * @param tokenInfo
      * @return
+     * @deprecated {@link LOOLService#getFileNodeRef(WOPIAccessTokenInfo)}
      */
+    @Deprecated
     NodeRef getFileNodeRef(WOPIAccessTokenInfo tokenInfo);
 
     /**
