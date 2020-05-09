@@ -17,6 +17,12 @@
 	limitations under the License.
 -->
 <beans>
+	<bean id="lool.webscript" abstract="true" class="dk.magenta.libreoffice.online.LOOLAbstractWebScript"
+		  parent="webscript">
+		<property name="loolService" ref="LOOLService"/>
+		<property name="nodeService" ref="NodeService"/>
+	</bean>
+	
 	<bean id="webscript.dk.magenta.wopi.token.get" class="dk.magenta.libreoffice.online.LOOLGetTokenWebScript"
 		  parent="webscript">
 		<property name="loolService" ref="LOOLService"/>
@@ -30,17 +36,13 @@
 	</bean>
 
 	<bean id="webscript.dk.magenta.wopi.file.get" class="dk.magenta.libreoffice.online.LOOLGetFileWebScript"
-		  parent="webscript">
-		<property name="loolService" ref="LOOLService"/>
-		<property name="nodeService" ref="NodeService"/>
+		  parent="lool.webscript">
 		<property name="contentService" ref="ContentService"/>
 	</bean>
 
 	<bean id="webscript.dk.magenta.wopi.file.post" class="dk.magenta.libreoffice.online.LOOLPutFileWebScript"
-		  parent="webscript">
+		  parent="lool.webscript">
 		<property name="contentService" ref="ContentService"/>
-		<property name="loolService" ref="LOOLService"/>
-		<property name="nodeService" ref="nodeService"/>
 		<property name="retryingTransactionHelper" ref="retryingTransactionHelper" />
 		<property name="versionService" ref="versionService" />
 		<property name="mimetypeService" ref="mimetypeService" />
@@ -53,6 +55,6 @@
 
 	<bean id="webscript.fr.arawa.lool.aspect-collabora-online.clean-auto-version.post" class="fr.arawa.lool.alfresco.CleanVersionWebScript"
 		  parent="webscript">
-        <property name="versionService" ref="versionService" />
+		<property name="versionService" ref="versionService" />
 	</bean>
 </beans>

@@ -13,7 +13,6 @@ import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
-import dk.magenta.libreoffice.online.service.LOOLServiceImpl;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
 public abstract class LOOLAbstractWebScript extends AbstractWebScript {
@@ -97,8 +96,8 @@ public abstract class LOOLAbstractWebScript extends AbstractWebScript {
         this.nodeService = nodeService;
     }
 
-    public void setLoolService(LOOLServiceImpl loolService) {
-        this.loolService = loolService;
+    public void setLoolService(LOOLService loolService2) {
+        this.loolService = loolService2;
     }
 
 }

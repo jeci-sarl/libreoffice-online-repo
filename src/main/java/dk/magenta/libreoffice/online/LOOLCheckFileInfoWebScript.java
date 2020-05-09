@@ -89,6 +89,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
             }
         };
         dws.setNodeService(this.nodeService);
+        dws.setLoolService(this.loolService);
         final WOPIAccessTokenInfo wopiToken = dws.wopiToken(req);
         final NodeRef nodeRef = dws.getFileNodeRef(wopiToken);
 
