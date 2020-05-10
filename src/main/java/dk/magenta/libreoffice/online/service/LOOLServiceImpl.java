@@ -129,7 +129,7 @@ public class LOOLServiceImpl implements LOOLService {
         this.tokenMap.put(tokenInfo.getAccessToken(), tokenInfo);
 
         if (logger.isDebugEnabled()) {
-            logger.debug("Created Access Token for user '" + userName + "' and fileId '" + fileId + "'");
+            logger.debug("Created Access Token for user '" + userName + "' and nodeRef '" + nodeRef + "'");
         }
         return tokenInfo;
     }

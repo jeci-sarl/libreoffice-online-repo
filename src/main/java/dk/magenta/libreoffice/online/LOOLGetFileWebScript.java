@@ -27,18 +27,26 @@ import org.alfresco.service.cmr.repository.ContentReader;
 import org.alfresco.service.cmr.repository.ContentService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
 public class LOOLGetFileWebScript extends LOOLAbstractWebScript {
+    private static final Log logger = LogFactory.getLog(LOOLGetFileWebScript.class);
+
     private ContentService contentService;
 
     @Override
     public void execute(final WebScriptRequest req, final WebScriptResponse res) throws IOException {
         final WOPIAccessTokenInfo wopiToken = wopiToken(req);
         final NodeRef nodeRef = getFileNodeRef(wopiToken);
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Get File for user '" + wopiToken.getUserName() + "' and nodeRef '" + nodeRef + "'");
+        }
 
         AuthenticationUtil.pushAuthentication();
         try {

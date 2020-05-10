@@ -32,6 +32,8 @@ import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.namespace.QName;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.Cache;
 import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
@@ -43,6 +45,8 @@ import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 
 public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
+    private static final Log logger = LogFactory.getLog(LOOLCheckFileInfoWebScript.class);
+
     private final static String ENABLE_OWNER_TERMINATION = "EnableOwnerTermination";
     private final static String POST_MESSAGE_ORIGIN = "PostMessageOrigin";
     private final static String VERSION = "Version";
@@ -92,6 +96,12 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         dws.setLoolService(this.loolService);
         final WOPIAccessTokenInfo wopiToken = dws.wopiToken(req);
         final NodeRef nodeRef = dws.getFileNodeRef(wopiToken);
+        
+
+        if (logger.isDebugEnabled()) {
+            logger.debug("Check File for user '" + wopiToken.getUserName() + "' and nodeRef '" + nodeRef + "'");
+        }
+
 
         ensureVersioningEnabled(wopiToken, nodeRef);
 

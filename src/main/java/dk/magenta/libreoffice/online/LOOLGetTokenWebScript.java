@@ -19,6 +19,8 @@ package dk.magenta.libreoffice.online;
 import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
 import org.alfresco.service.cmr.repository.NodeRef;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.*;
 
 import java.io.IOException;
@@ -26,6 +28,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class LOOLGetTokenWebScript extends DeclarativeWebScript {
+    private static final Log logger = LogFactory.getLog(LOOLGetTokenWebScript.class);
+
     private static final String WOPI_SRC_URL = "wopi_src_url";
     private static final String ACCESS_TOKEN_TTL = "access_token_ttl";
     private static final String ACCESS_TOKEN = "access_token";
@@ -48,12 +52,16 @@ public class LOOLGetTokenWebScript extends DeclarativeWebScript {
         }
 
         final WOPIAccessTokenInfo tokenInfo = loolService.createAccessToken(nodeRef);
+        model.put(ACCESS_TOKEN, tokenInfo.getAccessToken());
+        model.put(ACCESS_TOKEN_TTL, tokenInfo.getExpiresAt().getTime());
 
         try {
             String wopiSrcUrl = loolService.getWopiSrcURL(nodeRef, action);
 
-            model.put(ACCESS_TOKEN, tokenInfo.getAccessToken());
-            model.put(ACCESS_TOKEN_TTL, tokenInfo.getExpiresAt().getTime());
+            if (logger.isDebugEnabled()) {
+                logger.debug("Get Token " + action + " for wopiSrcUrl " + wopiSrcUrl);
+            }
+
             model.put(WOPI_SRC_URL, wopiSrcUrl);
         } catch (IOException e) {
             status.setCode(Status.STATUS_INTERNAL_SERVER_ERROR, "Failed to get wopiSrcURL");
