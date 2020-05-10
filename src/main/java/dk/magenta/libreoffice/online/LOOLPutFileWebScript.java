@@ -94,14 +94,18 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
         try {
             boolean success = checkTimestamp(req, res, properties);
 
+            if (logger.isDebugEnabled()) {
+                logger.debug("checkTimestamp " + (success ? "is" : "is not") + " success");
+            }
+            
             if (success) {
                 writeFileToDisk(req, isAutosave, wopiToken, nodeRef);
                 responseNewModifiedTime(res, properties);
-            }
-
-            if (logger.isInfoEnabled()) {
-                logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
-                        + properties.get(ContentModel.PROP_MODIFIER));
+                
+                if (logger.isInfoEnabled()) {
+                    logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
+                            + properties.get(ContentModel.PROP_MODIFIER));
+                }
             }
 
         } catch (ContentIOException we) {
