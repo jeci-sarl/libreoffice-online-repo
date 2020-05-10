@@ -103,7 +103,6 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         ensureVersioningEnabled(wopiToken, nodeRef);
 
         Map<String, Object> model = new HashMap<>();
-        try {
         Map<QName, Serializable> properties = dws.runAsGetProperties(wopiToken, nodeRef);
 
         final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
@@ -140,7 +139,20 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         // Search https://www.collaboraoffice.com/category/community-en/ for
         // EnableOwnerTermination
         model.put(ENABLE_OWNER_TERMINATION, false);
+
+        if (logger.isDebugEnabled()) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Check File details : {");
+            sb.append("BASE_FILE_NAME: ").append(model.get(BASE_FILE_NAME)).append(", ");
+            sb.append("OWNER_ID: ").append(model.get(OWNER_ID)).append(", ");
+            sb.append("SIZE: ").append(model.get(SIZE)).append(", ");
+            sb.append("VERSION: ").append(model.get(VERSION)).append(", ");
+            sb.append("POST_MESSAGE_ORIGIN: ").append(model.get(POST_MESSAGE_ORIGIN));
+            sb.append("}");
+
+            logger.debug(sb.toString());
         }
+
         return model;
     }
 
