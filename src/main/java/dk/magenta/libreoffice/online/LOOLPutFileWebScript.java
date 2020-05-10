@@ -32,6 +32,7 @@ import org.alfresco.model.ContentModel;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
+import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
@@ -97,11 +98,11 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
             if (logger.isDebugEnabled()) {
                 logger.debug("checkTimestamp " + (success ? "is" : "is not") + " success");
             }
-            
+
             if (success) {
                 writeFileToDisk(req, isAutosave, wopiToken, nodeRef);
                 responseNewModifiedTime(res, properties);
-                
+
                 if (logger.isInfoEnabled()) {
                     logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
                             + properties.get(ContentModel.PROP_MODIFIER));
@@ -147,11 +148,11 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
                 writer.setMimetype(mimetype);
                 writer.guessEncoding();
 
-                new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-                    /*
-                     * Then attach the content to the noderef. This prevent the
-                     * RetryingTransactionHelper mecanisme to store empty content.
-                     */
+                /*
+                 * Then attach the content to the noderef. This prevent the
+                 * RetryingTransactionHelper mecanisme to store empty content.
+                 */
+                retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
                     @Override
                     public Void execute() throws Throwable {
                         ContentData contentData = writer.getContentData();
@@ -167,7 +168,8 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
                         return null;
                     }
 
-                };
+                });
+                
                 return null;
             }
         }, wopiToken.getUserName());
