@@ -37,7 +37,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.Cache;
 import org.springframework.extensions.webscripts.DeclarativeWebScript;
 import org.springframework.extensions.webscripts.Status;
-import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
 import org.springframework.extensions.webscripts.WebScriptResponse;
 
@@ -96,55 +95,51 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         dws.setLoolService(this.loolService);
         final WOPIAccessTokenInfo wopiToken = dws.wopiToken(req);
         final NodeRef nodeRef = dws.getFileNodeRef(wopiToken);
-        
 
         if (logger.isDebugEnabled()) {
             logger.debug("Check File for user '" + wopiToken.getUserName() + "' and nodeRef '" + nodeRef + "'");
         }
 
-
         ensureVersioningEnabled(wopiToken, nodeRef);
 
         Map<String, Object> model = new HashMap<>();
         try {
-            Map<QName, Serializable> properties = dws.runAsGetProperties(wopiToken, nodeRef);
+        Map<QName, Serializable> properties = dws.runAsGetProperties(wopiToken, nodeRef);
 
-            final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
-            // Convert lastModifiedTime to ISO 8601 according to:
-            // https://github.com/LibreOffice/online/blob/master/wsd/Storage.cpp#L460 or
-            // look in the
-            // std::unique_ptr<WopiStorage::WOPIFileInfo> WopiStorage::getWOPIFileInfo
-            final String dte = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC)
-                    .format(Instant.ofEpochMilli(lastModifiedDate.getTime()));
-            // TODO Some properties are hard coded for now but we should look into making
-            // them sysadmin configurable
+        final Date lastModifiedDate = (Date) properties.get(ContentModel.PROP_MODIFIED);
+        // Convert lastModifiedTime to ISO 8601 according to:
+        // https://github.com/LibreOffice/online/blob/master/wsd/Storage.cpp#L460 or
+        // look in the
+        // std::unique_ptr<WopiStorage::WOPIFileInfo> WopiStorage::getWOPIFileInfo
+        final String dte = DateTimeFormatter.ISO_DATE_TIME.withZone(ZoneOffset.UTC)
+                .format(Instant.ofEpochMilli(lastModifiedDate.getTime()));
+        // TODO Some properties are hard coded for now but we should look into making
+        // them sysadmin configurable
 
-            // BaseFileName need extension, else Lool load it in read-only mode (since
-            // 2.1.4)
-            model.put(BASE_FILE_NAME, (String) properties.get(ContentModel.PROP_NAME));
-            // We need to enable this if we want to be able to insert image into the
-            // documents
-            model.put(DISABLE_COPY, false);
-            model.put(DISABLE_PRINT, false);
-            model.put(DISABLE_EXPORT, false);
-            model.put(HIDE_EXPORT_OPTION, false);
-            model.put(HIDE_SAVE_OPTION, false);
-            model.put(HIDE_PRINT_OPTION, false);
-            model.put(LAST_MODIFIED_TIME, dte);
-            model.put(OWNER_ID, properties.get(ContentModel.PROP_CREATOR).toString());
-            final ContentData contentData = (ContentData) properties.get(ContentModel.PROP_CONTENT);
-            model.put(SIZE, contentData.getSize());
-            model.put(USER_ID, wopiToken.getUserName());
-            model.put(USER_CAN_WRITE, true);
-            model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
-            model.put(VERSION, (String) properties.get(ContentModel.PROP_VERSION_LABEL));
-            // Host from which token generation request originated
-            model.put(POST_MESSAGE_ORIGIN, loolService.getAlfExternalHost().toString());
-            // Search https://www.collaboraoffice.com/category/community-en/ for
-            // EnableOwnerTermination
-            model.put(ENABLE_OWNER_TERMINATION, false);
-        } catch (Exception ge) {
-            throw new WebScriptException(Status.STATUS_BAD_REQUEST, "error returning file nodeRef", ge);
+        // BaseFileName need extension, else Lool load it in read-only mode (since
+        // 2.1.4)
+        model.put(BASE_FILE_NAME, (String) properties.get(ContentModel.PROP_NAME));
+        // We need to enable this if we want to be able to insert image into the
+        // documents
+        model.put(DISABLE_COPY, false);
+        model.put(DISABLE_PRINT, false);
+        model.put(DISABLE_EXPORT, false);
+        model.put(HIDE_EXPORT_OPTION, false);
+        model.put(HIDE_SAVE_OPTION, false);
+        model.put(HIDE_PRINT_OPTION, false);
+        model.put(LAST_MODIFIED_TIME, dte);
+        model.put(OWNER_ID, properties.get(ContentModel.PROP_CREATOR).toString());
+        final ContentData contentData = (ContentData) properties.get(ContentModel.PROP_CONTENT);
+        model.put(SIZE, contentData.getSize());
+        model.put(USER_ID, wopiToken.getUserName());
+        model.put(USER_CAN_WRITE, true);
+        model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
+        model.put(VERSION, (String) properties.get(ContentModel.PROP_VERSION_LABEL));
+        // Host from which token generation request originated
+        model.put(POST_MESSAGE_ORIGIN, loolService.getAlfExternalHost().toString());
+        // Search https://www.collaboraoffice.com/category/community-en/ for
+        // EnableOwnerTermination
+        model.put(ENABLE_OWNER_TERMINATION, false);
         }
         return model;
     }
