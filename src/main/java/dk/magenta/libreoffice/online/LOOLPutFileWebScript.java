@@ -41,6 +41,7 @@ import org.alfresco.service.cmr.repository.MimetypeService;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.cmr.version.VersionType;
+import org.alfresco.service.namespace.QName;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.extensions.webscripts.Status;
@@ -88,18 +89,19 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
 
         final WOPIAccessTokenInfo wopiToken = wopiToken(req);
         final NodeRef nodeRef = getFileNodeRef(wopiToken);
+        final Map<QName, Serializable> properties = runAsGetProperties(wopiToken, nodeRef);
 
         try {
-            boolean success = checkTimestamp(req, res, nodeRef);
+            boolean success = checkTimestamp(req, res, properties);
 
             if (success) {
                 writeFileToDisk(req, isAutosave, wopiToken, nodeRef);
-                responseNewModifiedTime(res, nodeRef);
+                responseNewModifiedTime(res, properties);
             }
 
             if (logger.isInfoEnabled()) {
                 logger.info("Modifier for the above nodeRef [" + nodeRef.toString() + "] is: "
-                        + nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIER));
+                        + properties.get(ContentModel.PROP_MODIFIER));
             }
 
         } catch (ContentIOException we) {
@@ -174,12 +176,12 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
      * @param res
      * @param nodeRef
      */
-    private void responseNewModifiedTime(final WebScriptResponse res, final NodeRef nodeRef) {
+    private void responseNewModifiedTime(final WebScriptResponse res, final Map<QName, Serializable> properties) {
         retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
             @Override
             public Void execute() throws Throwable {
 
-                Date newModified = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+                Date newModified = (Date) properties.get(ContentModel.PROP_MODIFIED);
                 final String dte = iso8601formater.format(Instant.ofEpochMilli(newModified.getTime()));
 
                 jsonResponse(res, 200, "{ \"LastModifiedTime\": \"" + dte + "\" }");
@@ -198,8 +200,8 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
      * @return false if error, and write response output with code 409
      * @throws IOException
      */
-    private boolean checkTimestamp(final WebScriptRequest req, final WebScriptResponse res, final NodeRef nodeRef)
-            throws IOException {
+    private boolean checkTimestamp(final WebScriptRequest req, final WebScriptResponse res,
+            final Map<QName, Serializable> properties) throws IOException {
 
         final String hdrTimestamp = req.getHeader(X_LOOL_WOPI_TIMESTAMP);
         if (hdrTimestamp == null) {
@@ -219,7 +221,7 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
         }
 
         // Check X_LOOL_WOPI_TIMESTAMP header
-        final Date modified = (Date) nodeService.getProperty(nodeRef, ContentModel.PROP_MODIFIED);
+        final Date modified = (Date) properties.get(ContentModel.PROP_MODIFIED);
         final LocalDate localDate = ((Date) modified).toInstant().atZone(ZoneOffset.UTC).toLocalDate();
         if (loolTimestamp.compareTo(localDate) != 0) {
             if (logger.isDebugEnabled()) {

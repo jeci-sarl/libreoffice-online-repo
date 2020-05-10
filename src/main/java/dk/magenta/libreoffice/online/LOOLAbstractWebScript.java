@@ -1,5 +1,6 @@
 package dk.magenta.libreoffice.online;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -11,6 +12,7 @@ import org.alfresco.service.namespace.QName;
 import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
+import org.springframework.extensions.webscripts.WebScriptResponse;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
