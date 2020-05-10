@@ -140,17 +140,18 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
     }
 
     private void ensureVersioningEnabled(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
-        // Force Versionning
-        AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Void>() {
-            @Override
-            public Void doWork() throws Exception {
-                if (!nodeService.hasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE)) {
-                    Map<QName, Serializable> initialVersionProps = new HashMap<QName, Serializable>(1, 1.0f);
-                    versionService.ensureVersioningEnabled(nodeRef, initialVersionProps);
-                }
-                return null;
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+
+            // Force Versionning
+            if (!nodeService.hasAspect(nodeRef, ContentModel.ASPECT_VERSIONABLE)) {
+                Map<QName, Serializable> initialVersionProps = new HashMap<QName, Serializable>(1, 1.0f);
+                versionService.ensureVersioningEnabled(nodeRef, initialVersionProps);
             }
-        }, wopiToken.getUserName());
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
     }
 
     public void setLoolService(LOOLService loolService) {
@@ -160,7 +161,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
     public void setVersionService(VersionService versionService) {
         this.versionService = versionService;
     }
-    
+
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
     }

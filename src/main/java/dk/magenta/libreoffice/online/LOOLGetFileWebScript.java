@@ -40,25 +40,22 @@ public class LOOLGetFileWebScript extends LOOLAbstractWebScript {
         final WOPIAccessTokenInfo wopiToken = wopiToken(req);
         final NodeRef nodeRef = getFileNodeRef(wopiToken);
 
-        AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Void>() {
-            @Override
-            public Void doWork() throws Exception {
-                final ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef,
-                        ContentModel.PROP_CONTENT);
-                res.setContentType(contentProp.getMimetype());
-                res.setContentEncoding(contentProp.getEncoding());
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+            final ContentData contentProp = (ContentData) nodeService.getProperty(nodeRef, ContentModel.PROP_CONTENT);
+            res.setContentType(contentProp.getMimetype());
+            res.setContentEncoding(contentProp.getEncoding());
 
-                final ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
+            final ContentReader reader = contentService.getReader(nodeRef, ContentModel.PROP_CONTENT);
 
-                try (InputStream inputStream = reader.getContentInputStream();
-                        OutputStream outputStream = res.getOutputStream();) {
-                    IOUtils.copy(inputStream, outputStream);
-                }
-                return null;
+            try (InputStream inputStream = reader.getContentInputStream();
+                    OutputStream outputStream = res.getOutputStream();) {
+                IOUtils.copy(inputStream, outputStream);
             }
-
-        }, wopiToken.getUserName());
-
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
     }
 
     public void setContentService(ContentService contentService) {

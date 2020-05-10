@@ -1,6 +1,5 @@
 package dk.magenta.libreoffice.online;
 
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.Map;
 
@@ -12,7 +11,6 @@ import org.alfresco.service.namespace.QName;
 import org.springframework.extensions.webscripts.AbstractWebScript;
 import org.springframework.extensions.webscripts.WebScriptException;
 import org.springframework.extensions.webscripts.WebScriptRequest;
-import org.springframework.extensions.webscripts.WebScriptResponse;
 
 import dk.magenta.libreoffice.online.service.LOOLService;
 import dk.magenta.libreoffice.online.service.WOPIAccessTokenInfo;
@@ -42,26 +40,31 @@ public abstract class LOOLAbstractWebScript extends AbstractWebScript {
      * @return
      */
     protected NodeRef getFileNodeRef(final WOPIAccessTokenInfo wopiToken) {
-        return AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<NodeRef>() {
-            @Override
-            public NodeRef doWork() throws Exception {
-                final NodeRef fileNodeRef = getFileNodeRef(wopiToken.getFileId());
-                if (nodeService.exists(fileNodeRef)) {
-                    return fileNodeRef;
-                }
-                return null;
+
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+
+            final NodeRef fileNodeRef = getFileNodeRef(wopiToken.getFileId());
+            if (nodeService.exists(fileNodeRef)) {
+                return fileNodeRef;
             }
-        }, wopiToken.getUserName());
+            return null;
+
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
     }
 
     protected Map<QName, Serializable> runAsGetProperties(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
-        return AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<Map<QName, Serializable>>() {
-            @Override
-            public Map<QName, Serializable> doWork() throws Exception {
-                return nodeService.getProperties(nodeRef);
-            }
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
 
-        }, wopiToken.getUserName());
+            return nodeService.getProperties(nodeRef);
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
     }
 
     /**
@@ -83,13 +86,13 @@ public abstract class LOOLAbstractWebScript extends AbstractWebScript {
 
         if (!wopiToken.isValid()) {
             // try to renew
-            wopiToken = AuthenticationUtil.runAs(new AuthenticationUtil.RunAsWork<WOPIAccessTokenInfo>() {
-                @Override
-                public WOPIAccessTokenInfo doWork() throws Exception {
-                    return loolService.createAccessToken(nodeRef);
-                }
-
-            }, wopiToken.getUserName());
+            AuthenticationUtil.pushAuthentication();
+            try {
+                AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+                return loolService.createAccessToken(nodeRef);
+            } finally {
+                AuthenticationUtil.popAuthentication();
+            }
         }
         return wopiToken;
     }

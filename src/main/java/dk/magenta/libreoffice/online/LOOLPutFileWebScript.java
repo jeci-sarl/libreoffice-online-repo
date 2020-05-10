@@ -30,9 +30,7 @@ import java.util.Map;
 
 import org.alfresco.model.ContentModel;
 import org.alfresco.repo.security.authentication.AuthenticationUtil;
-import org.alfresco.repo.security.authentication.AuthenticationUtil.RunAsWork;
 import org.alfresco.repo.transaction.RetryingTransactionHelper;
-import org.alfresco.repo.transaction.RetryingTransactionHelper.RetryingTransactionCallback;
 import org.alfresco.repo.version.VersionModel;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.ContentIOException;
@@ -131,49 +129,50 @@ public class LOOLPutFileWebScript extends LOOLAbstractWebScript {
     private void writeFileToDisk(final WebScriptRequest req, final boolean isAutosave,
             final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) throws ContentIOException, IOException {
 
-        /* First write content from HTTP stream to the content store. */
-        AuthenticationUtil.runAs(new RunAsWork<Void>() {
-            public Void doWork() throws Exception {
-                final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
 
-                final InputStream inputStream = req.getContent().getInputStream();
-                writer.putContent(inputStream);
+            /* First write content from HTTP stream to the content store. */
+            final ContentWriter writer = contentService.getWriter(null, ContentModel.PROP_CONTENT, false);
 
-                final String name = (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME);
-                if (logger.isInfoEnabled()) {
-                    logger.info("Filename upload " + name);
-                }
+            final InputStream inputStream = req.getContent().getInputStream();
+            writer.putContent(inputStream);
 
-                String mimetype = mimetypeService.guessMimetype(name, writer.getReader());
-                writer.setMimetype(mimetype);
-                writer.guessEncoding();
-
-                /*
-                 * Then attach the content to the noderef. This prevent the
-                 * RetryingTransactionHelper mecanisme to store empty content.
-                 */
-                retryingTransactionHelper.doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
-                    @Override
-                    public Void execute() throws Throwable {
-                        ContentData contentData = writer.getContentData();
-                        nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
-
-                        Map<String, Serializable> versionProperties = new HashMap<String, Serializable>(2);
-                        versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
-                        if (isAutosave) {
-                            versionProperties.put(VersionModel.PROP_DESCRIPTION, AUTOSAVE_DESCRIPTION);
-                        }
-                        versionProperties.put(LOOL_AUTOSAVE, isAutosave);
-                        versionService.createVersion(nodeRef, versionProperties);
-                        return null;
-                    }
-
-                });
-                
-                return null;
+            final String name = (String) nodeService.getProperty(nodeRef, ContentModel.PROP_NAME);
+            if (logger.isInfoEnabled()) {
+                logger.info("Filename upload " + name);
             }
-        }, wopiToken.getUserName());
 
+            String mimetype = mimetypeService.guessMimetype(name, writer.getReader());
+            writer.setMimetype(mimetype);
+            writer.guessEncoding();
+
+            /*
+             * Then attach the content to the noderef. This prevent the
+             * RetryingTransactionHelper mecanisme to store empty content.
+             */
+            retryingTransactionHelper
+                    .doInTransaction(new RetryingTransactionHelper.RetryingTransactionCallback<Void>() {
+                        @Override
+                        public Void execute() throws Throwable {
+                            ContentData contentData = writer.getContentData();
+                            nodeService.setProperty(nodeRef, ContentModel.PROP_CONTENT, contentData);
+
+                            Map<String, Serializable> versionProperties = new HashMap<>(2);
+                            versionProperties.put(VersionModel.PROP_VERSION_TYPE, VersionType.MINOR);
+                            if (isAutosave) {
+                                versionProperties.put(VersionModel.PROP_DESCRIPTION, AUTOSAVE_DESCRIPTION);
+                            }
+                            versionProperties.put(LOOL_AUTOSAVE, isAutosave);
+                            versionService.createVersion(nodeRef, versionProperties);
+                            return null;
+                        }
+                    });
+
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
     }
 
     /**
