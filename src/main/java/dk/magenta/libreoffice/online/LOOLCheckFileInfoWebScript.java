@@ -30,6 +30,8 @@ import org.alfresco.repo.security.authentication.AuthenticationUtil;
 import org.alfresco.service.cmr.repository.ContentData;
 import org.alfresco.service.cmr.repository.NodeRef;
 import org.alfresco.service.cmr.repository.NodeService;
+import org.alfresco.service.cmr.security.AccessStatus;
+import org.alfresco.service.cmr.security.PermissionService;
 import org.alfresco.service.cmr.version.VersionService;
 import org.alfresco.service.namespace.QName;
 import org.apache.commons.logging.Log;
@@ -66,6 +68,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
     private LOOLService loolService;
     private NodeService nodeService;
     private VersionService versionService;
+    private PermissionService permissionService;
 
     /**
      * https://msdn.microsoft.com/en-us/library/hh622920(v=office.12).aspx search
@@ -131,7 +134,7 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         final ContentData contentData = (ContentData) properties.get(ContentModel.PROP_CONTENT);
         model.put(SIZE, contentData.getSize());
         model.put(USER_ID, wopiToken.getUserName());
-        model.put(USER_CAN_WRITE, true);
+        model.put(USER_CAN_WRITE, userCanWrite(wopiToken, nodeRef));
         model.put(USER_FRIENDLY_NAME, wopiToken.getUserName());
         model.put(VERSION, (String) properties.get(ContentModel.PROP_VERSION_LABEL));
         // Host from which token generation request originated
@@ -145,9 +148,12 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
             sb.append("Check File details : {");
             sb.append("BASE_FILE_NAME: ").append(model.get(BASE_FILE_NAME)).append(", ");
             sb.append("OWNER_ID: ").append(model.get(OWNER_ID)).append(", ");
+            sb.append("USER_ID: ").append(model.get(USER_ID)).append(", ");
+            sb.append("USER_CAN_WRITE: ").append(model.get(USER_CAN_WRITE)).append(", ");
             sb.append("SIZE: ").append(model.get(SIZE)).append(", ");
             sb.append("VERSION: ").append(model.get(VERSION)).append(", ");
             sb.append("POST_MESSAGE_ORIGIN: ").append(model.get(POST_MESSAGE_ORIGIN));
+            sb.append("LAST_MODIFIED_TIME: ").append(model.get(LAST_MODIFIED_TIME));
             sb.append("}");
 
             logger.debug(sb.toString());
@@ -171,6 +177,18 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
         }
     }
 
+    private boolean userCanWrite(final WOPIAccessTokenInfo wopiToken, final NodeRef nodeRef) {
+        AuthenticationUtil.pushAuthentication();
+        try {
+            AuthenticationUtil.setRunAsUser(wopiToken.getUserName());
+            AccessStatus perm = permissionService.hasPermission(nodeRef, PermissionService.WRITE);
+
+            return AccessStatus.ALLOWED == perm;
+        } finally {
+            AuthenticationUtil.popAuthentication();
+        }
+    }
+
     public void setLoolService(LOOLService loolService) {
         this.loolService = loolService;
     }
@@ -181,5 +199,9 @@ public class LOOLCheckFileInfoWebScript extends DeclarativeWebScript {
 
     public void setNodeService(NodeService nodeService) {
         this.nodeService = nodeService;
+    }
+
+    public void setPermissionService(PermissionService permissionService) {
+        this.permissionService = permissionService;
     }
 }
