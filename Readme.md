@@ -54,6 +54,15 @@ After you've done that you can create issues in https://github.com/ArawaFr/libre
 
 ### Changelog
 
+**version 1.3.1**
+
+* Ensure Versioning is Enabled on edited node (restoring old functionality)
+* Deprecate WOPITokenService, code was move to LOOLService
+* Move common webscript code to an abstract class (Duplication Code)
+* Use secure VersionService (Security)
+* Remove AuthenticationUtil.runAs, prefere AuthenticationUtil.push/popAuthentication
+* Check File Info: Check if PermissionService.WRITE, to node
+
 **version 1.3.0**
 
 * Simply token cache mecanisme
